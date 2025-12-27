@@ -1,0 +1,8 @@
+{
+  "name": "InterviewEdge AI",
+  "description": "A comprehensive AI-driven platform for college students to enhance interview readiness through resume analysis, technical assessments, and simulated mock interviews.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
