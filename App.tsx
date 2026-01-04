@@ -39,6 +39,7 @@ const App: React.FC = () => {
   const [interviewTranscript, setInterviewTranscript] = useState<string>('');
   
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -92,19 +93,23 @@ const App: React.FC = () => {
     setFacultyView(false);
     setIsFacultyEntryMode(false);
     setStage(AppStage.LANDING);
+    setError(null);
   };
 
   const handleStartDeployment = () => {
     setStage(AppStage.TARGET);
+    setError(null);
   };
 
   const handleRoleSelection = (role: string) => {
     setTargetRole(role);
     setStage(AppStage.RESUME);
+    setError(null);
   };
 
   const handleResumeUpload = async (text: string) => {
     setIsProcessing(true);
+    setError(null);
     try {
       const result = await analyzeResume(text, targetRole);
       setResumeResults(result);
@@ -115,8 +120,9 @@ const App: React.FC = () => {
       }
       
       setStage(AppStage.FORGE);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Vector analysis failed:", err);
+      setError(err.message || "An unexpected error occurred during analysis.");
     } finally {
       setIsProcessing(false);
     }
@@ -128,11 +134,13 @@ const App: React.FC = () => {
     setCodingChallenges(challenges);
     setUserSubmissions(submissions);
     setStage(AppStage.INTERVIEW);
+    setError(null);
   };
 
   const handleInterviewComplete = async (transcript: string) => {
     setInterviewTranscript(transcript);
     setIsProcessing(true);
+    setError(null);
     try {
       const result = await evaluateFinalReadiness(
         resumeResults?.score || 0,
@@ -157,8 +165,9 @@ const App: React.FC = () => {
       }
       
       setStage(AppStage.VERDICT);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Verdict generation failed:", err);
+      setError(err.message || "An unexpected error occurred generating your final score.");
     } finally {
       setIsProcessing(false);
     }
@@ -257,6 +266,7 @@ const App: React.FC = () => {
             setShowPortalForm(false); 
             setFacultyView(false); 
             setIsFacultyEntryMode(false); 
+            setError(null);
           }
         }} 
         onLogout={handleLogout}
@@ -274,6 +284,24 @@ const App: React.FC = () => {
             </div>
             <h2 className="text-2xl font-black uppercase tracking-[0.3em] text-indigo-900 animate-pulse text-center px-4">Syncing Neural Data</h2>
             <p className="text-slate-400 text-xs font-bold mt-4 tracking-widest uppercase">Initializing Assessment Engine</p>
+          </div>
+        ) : error ? (
+          <div className="max-w-2xl mx-auto px-6 py-20 text-center space-y-8 animate-fadeIn">
+             <div className="w-20 h-20 bg-rose-50 border border-rose-100 rounded-3xl flex items-center justify-center text-rose-500 mx-auto shadow-sm">
+                <i className="fas fa-exclamation-triangle text-3xl"></i>
+             </div>
+             <div className="space-y-3">
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">System Exception</h2>
+                <p className="text-sm font-medium text-slate-500 leading-relaxed px-10">
+                  {error}
+                </p>
+             </div>
+             <button 
+                onClick={() => setError(null)}
+                className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-black transition-all"
+             >
+                Return to Previous State
+             </button>
           </div>
         ) : (
           renderStage()
