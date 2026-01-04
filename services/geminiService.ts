@@ -2,9 +2,20 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ResumeAnalysisResult, ReadinessScore, CodingChallenge } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+/**
+ * Helper to get a fresh AI instance.
+ * Guidelines require new instance per call for Gemini 3 / Veo workflows.
+ */
+const getAI = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("MISSING_API_KEY");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const suggestJobRoles = async (resumeText: string): Promise<string[]> => {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Based on this resume text, suggest 5 specific job roles the candidate is best suited for.
@@ -21,8 +32,9 @@ export const suggestJobRoles = async (resumeText: string): Promise<string[]> => 
 };
 
 export const analyzeResume = async (resumeText: string, targetRole: string): Promise<ResumeAnalysisResult> => {
+  const ai = getAI();
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3-pro-preview', // Complex reasoning
     contents: `Analyze this resume for a ${targetRole} position:
     ${resumeText}
     Provide a detailed JSON analysis.`,
@@ -46,6 +58,7 @@ export const analyzeResume = async (resumeText: string, targetRole: string): Pro
 };
 
 export const generateCodingRound = async (role: string): Promise<CodingChallenge[]> => {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: `Generate exactly 3 coding challenges for a ${role} position. 
@@ -79,6 +92,7 @@ export const generateCodingRound = async (role: string): Promise<CodingChallenge
 };
 
 export const evaluateCodeSubmission = async (challenge: CodingChallenge, userCode: string): Promise<{ isCorrect: boolean; feedback: string }> => {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Evaluate this coding solution.
@@ -107,8 +121,8 @@ export const evaluateFinalReadiness = async (
   interviewTranscript: string,
   cheated: boolean
 ): Promise<ReadinessScore> => {
-  // If cheated, they are ineligible regardless of score
-  const eligibilityFlag = !cheated && technicalScore >= 60; // 60% = 2/3 questions approx
+  const ai = getAI();
+  const eligibilityFlag = !cheated && technicalScore >= 60;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',

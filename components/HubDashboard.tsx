@@ -10,155 +10,242 @@ interface HubDashboardProps {
 
 export const HubDashboard: React.FC<HubDashboardProps> = ({ onStart, progress, history }) => {
   const phases = [
-    { id: 'TARGET', title: 'Calibration', subtitle: 'Target Path', status: 'READY', icon: 'fa-crosshairs' },
-    { id: 'RESUME', title: 'Audit', subtitle: 'CV Vectoring', status: progress > 15 ? 'COMPLETE' : 'READY', icon: 'fa-fingerprint' },
-    { id: 'FORGE', title: 'Forge', subtitle: 'Tech Logic', status: progress > 30 ? 'ACTIVE' : 'LOCKED', icon: 'fa-microchip' },
-    { id: 'INTERVIEW', title: 'Arena', subtitle: 'Behavioral', status: progress > 50 ? 'ACTIVE' : 'LOCKED', icon: 'fa-headset' },
+    { 
+      id: 'TARGET', 
+      title: 'Target Calibration', 
+      subtitle: 'PHASE 01: GOAL DEFINITION', 
+      status: progress >= 15 ? 'SYNCED' : 'READY', 
+      icon: 'fa-crosshairs',
+      done: progress >= 15,
+      isLocked: false
+    },
+    { 
+      id: 'RESUME', 
+      title: 'Neural Scanning', 
+      subtitle: 'PHASE 02: SKILL VECTORS', 
+      status: progress >= 30 ? 'SYNCED' : (progress >= 15 ? 'READY' : 'LOCKED'), 
+      icon: 'fa-fingerprint',
+      done: progress >= 30,
+      isLocked: progress < 15
+    },
+    { 
+      id: 'FORGE', 
+      title: 'Technical Forge', 
+      subtitle: 'PHASE 03: CODE RIGOR', 
+      status: progress >= 50 ? 'SYNCED' : (progress >= 30 ? 'READY' : 'LOCKED'), 
+      icon: 'fa-microchip',
+      done: progress >= 50,
+      isLocked: progress < 30
+    },
+    { 
+      id: 'INTERVIEW', 
+      title: 'Session Interaction', 
+      subtitle: 'PHASE 04: BEHAVIORAL', 
+      status: progress >= 100 ? 'SYNCED' : (progress >= 50 ? 'READY' : 'LOCKED'), 
+      icon: 'fa-headset',
+      done: progress >= 100,
+      isLocked: progress < 50
+    },
   ];
 
-  const averageScore = history.length > 0 
-    ? Math.round(history.reduce((acc, curr) => acc + curr.overall_score, 0) / history.length)
-    : 0;
+  const activity = [
+    { label: 'Neural Core Ready', time: 'SYSTEM ONLINE', completed: true },
+    { label: 'Profile Scanning', time: progress >= 30 ? 'VERIFIED' : 'PENDING', completed: progress >= 30 },
+    { label: 'Algorithm Audit', time: progress >= 50 ? 'VERIFIED' : 'PENDING', completed: progress >= 50 },
+    { label: 'Deployment Ready', time: progress >= 100 ? 'CALCULATED' : 'LOCKED', completed: progress >= 100 },
+  ];
 
   return (
-    <div className="max-w-[1400px] mx-auto px-6 py-24 space-y-12">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 stagger-1">
-        {/* Hero Section */}
-        <div className="lg:col-span-2 glass-panel p-16 rounded-[40px] relative overflow-hidden flex flex-col justify-center min-h-[500px]">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
+    <div className="max-w-[1440px] mx-auto px-4 sm:px-10 space-y-16 animate-fadeIn">
+      {/* Hero Header Section */}
+      <div className="relative group p-10 md:p-20 rounded-[4rem] bg-white border border-white/80 shadow-2xl overflow-hidden flex flex-col lg:flex-row justify-between items-center gap-12">
+        {/* Animated Background Accent */}
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-600 via-sky-400 to-transparent"></div>
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/5 blur-[120px] rounded-full group-hover:bg-indigo-500/10 transition-all duration-700"></div>
+        
+        <div className="space-y-8 md:space-y-12 flex-1 max-w-2xl relative z-10 text-center lg:text-left">
+          <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-indigo-50 rounded-full border border-indigo-100 shadow-sm">
+            <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse"></div>
+            <span className="text-[10px] font-black text-indigo-700 tracking-[0.4em] uppercase">Enterprise Readiness Engine</span>
+          </div>
           
-          <div className="relative z-10 space-y-8">
-            <div className="inline-flex items-center gap-3 px-4 py-2 bg-indigo-600/10 rounded-full border border-indigo-600/20 text-[9px] font-black text-indigo-400 tracking-[0.4em] uppercase">
-              <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></span>
-              Neural Command Center v4.2
-            </div>
-            
-            <h1 className="text-7xl font-black tracking-tighter leading-[0.85] text-white">
-              Bridge Your <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 glow-text">Industry Gap.</span>
+          <div className="space-y-6">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] text-slate-900">
+              Elevate Your <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-sky-500">Industry Footprint.</span>
             </h1>
             
-            <p className="text-lg text-slate-400 font-medium leading-relaxed max-w-xl">
-              A military-grade assessment pipeline combining NLP skill vectoring and high-fidelity behavioral simulations.
+            <p className="text-lg md:text-2xl text-slate-500 font-medium leading-relaxed mx-auto lg:mx-0 max-w-xl">
+              A high-precision neural pipeline designed to measure, analyze, and optimize your professional potential.
             </p>
+          </div>
 
+          <div className="pt-4">
             <button 
               onClick={onStart}
-              className="group px-10 py-5 bg-indigo-600 text-white rounded-2xl font-black text-sm tracking-widest uppercase hover:bg-indigo-700 transition-all flex items-center gap-4 shadow-2xl shadow-indigo-600/40 active:scale-95"
+              className="btn-crystal px-12 py-6 text-white rounded-3xl font-black text-xs tracking-[0.3em] uppercase flex items-center justify-center lg:justify-start gap-6 mx-auto lg:mx-0 active:scale-95 transition-all shadow-xl shadow-indigo-200"
             >
-              Initialize Deployment
-              <i className="fas fa-arrow-right transition-transform group-hover:translate-x-1"></i>
+              Start Pipeline
+              <i className="fas fa-arrow-right text-[10px]"></i>
             </button>
           </div>
         </div>
 
-        {/* Readiness Meter */}
-        <div className="glass-panel p-12 rounded-[40px] flex flex-col justify-between stagger-2">
-          <div>
-            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Global Readiness Average</div>
-            <div className="text-4xl font-black text-white font-mono-tech">{averageScore}%</div>
-          </div>
-
-          <div className="space-y-10">
-            <div className="flex flex-col items-center">
-              <div className="text-6xl font-black text-indigo-400 mb-2">{Math.round(progress)}<span className="text-xl">%</span></div>
-              <div className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">Current Session Index</div>
+        {/* Global Status Monitoring Card */}
+        <div className="w-full lg:w-[420px] glass-card p-10 md:p-12 rounded-[3.5rem] space-y-10 relative z-10 border border-white/80 shadow-2xl">
+          <div className="flex justify-between items-start">
+            <div className="space-y-2">
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Neural Status</div>
+              <div className="text-3xl font-black text-slate-900 tracking-tighter">Live Monitor</div>
             </div>
-            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-indigo-600 to-purple-600 transition-all duration-1000" style={{ width: `${progress}%` }}></div>
+            <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 border border-indigo-100">
+              <i className="fas fa-satellite-dish animate-pulse"></i>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-              <div className="text-[8px] font-black text-slate-500 uppercase mb-1">Total Sims</div>
-              <div className="text-xs font-bold text-emerald-400 font-mono-tech">{history.length}</div>
+          <div className="h-px bg-slate-100 w-full opacity-60"></div>
+
+          <div className="space-y-6">
+            <div className="flex justify-between items-end">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Readiness Probability</span>
+              <span className="text-2xl font-black text-indigo-600">{Math.round(progress)}%</span>
             </div>
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-              <div className="text-[8px] font-black text-slate-500 uppercase mb-1">Sync</div>
-              <div className="text-xs font-bold text-indigo-400 font-mono-tech">CLOUD</div>
+            <div className="h-6 bg-slate-50 border border-slate-100 rounded-full overflow-hidden p-1.5 shadow-inner">
+              <div 
+                className="h-full bg-gradient-to-r from-indigo-600 to-sky-500 rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(99,102,241,0.3)]" 
+                style={{ width: `${progress}%` }}
+              ></div>
             </div>
+          </div>
+
+          <div className="bg-indigo-50/50 p-6 rounded-3xl border border-indigo-100/50">
+            <p className="text-[9px] font-black text-indigo-600/70 uppercase tracking-widest text-center leading-relaxed">
+              Real-time synchronization with industry benchmarks active
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Process Gating Grid */}
-        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 stagger-3">
-          {phases.map((phase) => (
-            <div key={phase.id} className={`glass-panel glass-panel-hover p-10 rounded-[32px] flex flex-col justify-between h-[280px] relative overflow-hidden group ${phase.status === 'LOCKED' ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
-              <div className="flex justify-between items-start relative z-10">
-                <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:scale-110 transition-transform">
-                  <i className={`fas ${phase.icon} text-lg text-indigo-400`}></i>
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 md:gap-16">
+        
+        {/* Verification Phases Grid */}
+        <div className="lg:col-span-2 space-y-12">
+          <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Deployment Phases</h2>
+            <div className="flex items-center gap-3 px-4 py-2 bg-slate-100 rounded-full">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest italic">Phase Control: Online</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            {phases.map((phase) => (
+              <div 
+                key={phase.id} 
+                className={`group p-10 rounded-[3.5rem] flex flex-col justify-between h-[360px] transition-all duration-500 relative overflow-hidden ${
+                  phase.isLocked 
+                    ? 'bg-slate-100/30 opacity-40 grayscale border border-slate-200' 
+                    : 'glass-card hover:translate-y-[-6px] cursor-pointer'
+                }`}
+              >
+                {/* Active Phase Aura */}
+                {!phase.isLocked && !phase.done && (
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 blur-[40px] rounded-full animate-pulse"></div>
+                )}
+
+                <div className="flex justify-between items-start">
+                  <div className={`w-16 h-16 rounded-[1.75rem] flex items-center justify-center border-2 transition-transform group-hover:rotate-6 ${
+                    phase.isLocked ? 'bg-slate-200 border-slate-300' : 'bg-indigo-50 border-indigo-100'
+                  }`}>
+                    <i className={`fas ${phase.icon} text-2xl ${phase.isLocked ? 'text-slate-400' : 'text-indigo-600'}`}></i>
+                  </div>
+                  
+                  {/* Phase Completion Indicator */}
+                  <div className={`w-14 h-14 rounded-full border-4 border-slate-50 flex items-center justify-center relative shadow-sm ${phase.isLocked ? 'bg-slate-100' : 'bg-white'}`}>
+                     {!phase.isLocked && !phase.done && (
+                       <div className="absolute inset-0 border-t-4 border-indigo-600 rounded-full animate-spin opacity-40"></div>
+                     )}
+                     {phase.done && <i className="fas fa-check text-emerald-500"></i>}
+                  </div>
                 </div>
-                {phase.status === 'LOCKED' && <i className="fas fa-lock text-slate-600 text-xs"></i>}
-              </div>
-              
-              <div className="relative z-10">
-                <h3 className="text-xl font-black text-white mb-1">{phase.title}</h3>
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-6">{phase.subtitle}</p>
-                
-                <div className="flex items-center justify-between">
-                  <span className={`text-[9px] font-black uppercase tracking-widest ${phase.status === 'LOCKED' ? 'text-slate-600' : 'text-indigo-400'}`}>
+
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black tracking-tight text-slate-900">{phase.title}</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{phase.subtitle}</p>
+                </div>
+
+                <div className={`h-px w-full ${phase.isLocked ? 'bg-slate-200' : 'bg-slate-100'} opacity-60`}></div>
+
+                <div className="flex justify-between items-center">
+                  <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${
+                    phase.done ? 'text-emerald-600' : (phase.isLocked ? 'text-slate-400' : 'text-indigo-600')
+                  }`}>
                     {phase.status}
                   </span>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${phase.status === 'COMPLETE' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white/5 border-white/10 text-slate-600'}`}>
-                    <i className={`fas ${phase.status === 'COMPLETE' ? 'fa-check' : 'fa-arrow-right'} text-[10px]`}></i>
+                  
+                  <div className={`w-14 h-14 rounded-3xl flex items-center justify-center transition-all ${
+                    phase.done 
+                      ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100' 
+                      : (phase.isLocked ? 'bg-slate-200 text-slate-400' : 'bg-indigo-600 text-white shadow-xl shadow-indigo-100')
+                  }`}>
+                    <i className={`fas ${phase.done ? 'fa-check-double' : 'fa-play'} text-sm`}></i>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Historical Archive (Truly Proof of Backend Storage) */}
-        <div className="lg:col-span-1 glass-panel p-8 rounded-[40px] flex flex-col h-[580px] border-indigo-500/10 shadow-2xl">
-           <div className="flex items-center gap-3 mb-8">
-              <i className="fas fa-database text-indigo-400 text-sm"></i>
-              <h3 className="text-xs font-black text-white uppercase tracking-[0.3em]">Neural Archive</h3>
-           </div>
+        {/* Real-time Activity Logs (Right Sidebar) */}
+        <div className="glass-card p-12 rounded-[4rem] border border-white/80 shadow-2xl flex flex-col">
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-12">Neural Nodes</h2>
 
-           <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2">
-              {history.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
-                  <i className="fas fa-folder-open text-4xl mb-4"></i>
-                  <p className="text-[10px] font-black uppercase tracking-widest">No Sessions Found</p>
+          <div className="flex-1 space-y-12 relative">
+            {activity.map((item, i) => (
+              <div key={i} className="flex gap-8 relative">
+                {/* Vertical Connector Line */}
+                {i !== activity.length - 1 && (
+                  <div className="absolute left-[23px] top-12 bottom-[-48px] w-0.5 bg-slate-100"></div>
+                )}
+                
+                <div className={`w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center border-4 border-white z-10 transition-all duration-700 ${
+                  item.completed ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 scale-110' : 'bg-slate-100 text-slate-400'
+                }`}>
+                  <i className={`fas ${item.completed ? 'fa-microchip' : 'fa-lock'} text-[10px]`}></i>
                 </div>
-              ) : (
-                history.map((record) => (
-                  <div key={record.id} className="p-5 bg-white/2 border border-white/5 rounded-3xl hover:bg-white/5 transition-all group">
-                     <div className="flex justify-between items-start mb-3">
-                        <div className="text-[10px] font-black text-indigo-400 uppercase tracking-tighter truncate max-w-[120px]">
-                          {record.target_role}
-                        </div>
-                        <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${record.integrity_breach ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                          {record.integrity_breach ? 'BREACH' : 'SECURE'}
-                        </span>
-                     </div>
-                     <div className="flex items-end justify-between">
-                        <div>
-                          <div className="text-2xl font-black text-white">{record.overall_score}%</div>
-                          <div className="text-[8px] font-bold text-slate-600 mt-1">
-                            {new Date(record.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <button className="w-8 h-8 bg-indigo-600/10 text-indigo-400 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                          <i className="fas fa-chevron-right text-[10px]"></i>
-                        </button>
-                     </div>
-                  </div>
-                ))
-              )}
-           </div>
-        </div>
-      </div>
+                
+                <div className="space-y-1.5 py-1">
+                  <div className="text-lg font-black text-slate-900 tracking-tight leading-none">{item.label}</div>
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
 
-      {/* Bottom Legal/Version Bar */}
-      <div className="flex items-center justify-between pt-12 border-t border-white/5 text-[9px] font-black text-slate-600 uppercase tracking-[0.5em]">
-        <span>HireAI Kernel v4.4.2 (PRO)</span>
-        <div className="flex gap-10">
-          <span className="hover:text-indigo-400 cursor-pointer transition-colors">Documentation</span>
-          <span className="hover:text-indigo-400 cursor-pointer transition-colors">Edge Status</span>
+          {/* Bottom Protocol Info Box */}
+          <div className="mt-12 p-8 bg-slate-50/50 rounded-[3rem] border border-slate-100/80 space-y-8 shadow-inner">
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 border border-slate-200 shadow-sm">
+                <i className="fas fa-shield-halved text-xl"></i>
+              </div>
+              <div className="text-left">
+                <div className="text-[10px] font-black text-slate-900 uppercase tracking-[0.3em]">Validation</div>
+                <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Global Protocol v.4.0</div>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">RESUME MATCH</span>
+                <span className="text-[10px] font-black text-indigo-600 tracking-widest">70% MIN</span>
+              </div>
+              <div className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">TECH KPI</span>
+                <span className="text-[10px] font-black text-sky-600 tracking-widest">60% MIN</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ export const ResumeBenchmarking: React.FC<ResumeBenchmarkingProps> = ({ onUpload
 
   const handleFile = async (selectedFile: File) => {
     if (!selectedFile.type.includes('pdf') && !selectedFile.type.includes('text/plain') && !selectedFile.name.endsWith('.txt')) {
-      setError('INVALID PROTOCOL: Only .pdf or .txt formats are accepted.');
+      setError('PROTOCOL ERROR: Only .pdf or .txt formats are accepted.');
       return;
     }
 
@@ -22,26 +22,15 @@ export const ResumeBenchmarking: React.FC<ResumeBenchmarkingProps> = ({ onUpload
     setFile(selectedFile);
     setIsParsing(true);
 
-    // Simulate high-performance neural parsing delay
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const content = e.target?.result as string;
-      
-      // Artificial delay for UX "Deep Scanning" feel
-      setTimeout(() => {
-        setIsParsing(false);
-      }, 1500);
+      setTimeout(() => setIsParsing(false), 1500);
     };
 
     if (selectedFile.type.includes('text/plain') || selectedFile.name.endsWith('.txt')) {
       reader.readAsText(selectedFile);
     } else {
-      // For PDF in a browser-only environment without heavy libraries, 
-      // we treat the blob text as a best-effort or simulation for this prototype.
-      const text = await selectedFile.text();
-      setTimeout(() => {
-        setIsParsing(false);
-      }, 2000);
+      setTimeout(() => setIsParsing(false), 2000);
     }
   };
 
@@ -52,11 +41,6 @@ export const ResumeBenchmarking: React.FC<ResumeBenchmarkingProps> = ({ onUpload
     if (droppedFile) handleFile(droppedFile);
   };
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) handleFile(selectedFile);
-  };
-
   const triggerAnalysis = async () => {
     if (!file) return;
     const text = await file.text();
@@ -64,25 +48,22 @@ export const ResumeBenchmarking: React.FC<ResumeBenchmarkingProps> = ({ onUpload
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-24 px-6 animate-fadeInUp">
-      <div className="glass-panel p-16 rounded-[48px] shadow-2xl relative overflow-hidden">
-        {/* Background Glow */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 blur-[100px] rounded-full pointer-events-none"></div>
-
-        <div className="flex justify-between items-center mb-12 relative z-10">
-          <div>
-            <h2 className="text-3xl font-black text-white tracking-tighter">Neural Benchmarking</h2>
-            <div className="flex items-center gap-3 mt-2">
+    <div className="max-w-4xl mx-auto px-6 animate-fadeIn">
+      <div className="glass-card p-12 md:p-20 rounded-[4rem] relative overflow-hidden">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-16">
+          <div className="text-center md:text-left space-y-2">
+            <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Neural Scan</h2>
+            <div className="flex items-center justify-center md:justify-start gap-3">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Gating Threshold: 70% Match</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gating Threshold: 70% Affinity</p>
             </div>
           </div>
           {file && (
             <button 
               onClick={() => { setFile(null); setError(null); }}
-              className="text-[9px] font-black text-rose-500 uppercase tracking-widest hover:text-rose-400 transition-colors"
+              className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:text-rose-600 transition-colors"
             >
-              Clear Buffer
+              Flush Buffer
             </button>
           )}
         </div>
@@ -92,100 +73,67 @@ export const ResumeBenchmarking: React.FC<ResumeBenchmarkingProps> = ({ onUpload
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`relative group cursor-pointer w-full h-[360px] rounded-[32px] border-2 border-dashed transition-all duration-500 flex flex-col items-center justify-center overflow-hidden
-            ${isDragging ? 'border-indigo-500 bg-indigo-500/10 scale-[0.99] glow-indigo' : 'border-white/5 bg-black/20 hover:border-white/10'}
-            ${file ? 'border-emerald-500/30 bg-emerald-500/5' : ''}
+          className={`relative group cursor-pointer w-full h-[400px] rounded-[3.5rem] border-2 border-dashed transition-all duration-700 flex flex-col items-center justify-center overflow-hidden
+            ${isDragging ? 'border-indigo-500 bg-indigo-50/50 scale-[0.98]' : 'border-slate-200 bg-white/30 hover:bg-white/60'}
+            ${file ? 'border-emerald-300 bg-emerald-50/20' : ''}
           `}
         >
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={onFileChange} 
-            className="hidden" 
-            accept=".pdf,.txt"
-          />
+          <input type="file" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} className="hidden" accept=".pdf,.txt" />
 
-          {/* Scanner Line Animation */}
           {isParsing && (
             <div className="absolute inset-0 z-20 pointer-events-none">
-              <div className="w-full h-[2px] bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.8)] animate-[scan_2s_ease-in-out_infinite]"></div>
+              <div className="w-full h-1 bg-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.5)] animate-scanLine"></div>
             </div>
           )}
 
-          <div className="relative z-10 flex flex-col items-center text-center p-8">
+          <div className="text-center space-y-6 px-10">
             {!file ? (
               <>
-                <div className="w-20 h-20 bg-white/5 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-white/5">
-                  <i className="fas fa-cloud-arrow-up text-3xl text-indigo-400"></i>
+                <div className="w-20 h-20 bg-indigo-50 rounded-[1.5rem] flex items-center justify-center border border-indigo-100 mx-auto group-hover:scale-110 transition-transform">
+                  <i className="fas fa-file-upload text-3xl text-indigo-600"></i>
                 </div>
-                <h3 className="text-xl font-black text-white mb-2 uppercase tracking-tight">Drop Resume Artifact</h3>
-                <p className="text-xs text-slate-500 font-medium max-w-xs leading-relaxed">
-                  Upload your professional profile in <span className="text-slate-300">PDF</span> or <span className="text-slate-300">TXT</span> format for deep vector analysis.
-                </p>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Drop Resume Artifact</h3>
+                  <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">
+                    Upload your profile in <span className="text-indigo-600">PDF</span> or <span className="text-indigo-600">TXT</span> for deep vector analysis.
+                  </p>
+                </div>
               </>
             ) : (
-              <div className="animate-fadeIn">
-                <div className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-6 border transition-colors ${isParsing ? 'bg-indigo-600/20 border-indigo-500/40' : 'bg-emerald-600/20 border-emerald-500/40'}`}>
-                  <i className={`fas ${isParsing ? 'fa-spinner fa-spin text-indigo-400' : 'fa-check-double text-emerald-400'} text-4xl`}></i>
+              <div className="animate-fadeIn space-y-6">
+                <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto border-2 ${isParsing ? 'bg-indigo-50 border-indigo-200 animate-pulse' : 'bg-emerald-50 border-emerald-200'}`}>
+                  <i className={`fas ${isParsing ? 'fa-spinner fa-spin text-indigo-600' : 'fa-check-double text-emerald-500'} text-4xl`}></i>
                 </div>
-                <h3 className="text-xl font-black text-white mb-1 uppercase tracking-tight">
-                  {isParsing ? 'Analyzing Vectors...' : 'Calibration Complete'}
-                </h3>
-                <div className="bg-black/40 px-4 py-2 rounded-full border border-white/5 mt-4 inline-block font-mono-tech text-[10px] text-slate-400 uppercase tracking-widest">
-                  {file.name} — {(file.size / 1024).toFixed(1)} KB
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                    {isParsing ? 'Scanning Vectors...' : 'Calibration Active'}
+                  </h3>
+                  <div className="px-5 py-2 bg-white rounded-full border border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest inline-block">
+                    {file.name} — {(file.size / 1024).toFixed(1)} KB
+                  </div>
                 </div>
               </div>
             )}
           </div>
-
-          {/* Decorative Corner Accents */}
-          <div className="absolute top-4 left-4 w-4 h-4 border-t-2 border-l-2 border-white/10"></div>
-          <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-white/10"></div>
-          <div className="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-white/10"></div>
-          <div className="absolute bottom-4 right-4 w-4 h-4 border-b-2 border-r-2 border-white/10"></div>
         </div>
 
         {error && (
-          <div className="mt-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 animate-shake">
-            <i className="fas fa-triangle-exclamation text-rose-500"></i>
-            <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest">{error}</p>
+          <div className="mt-8 p-5 bg-rose-50 border border-rose-100 rounded-3xl flex items-center gap-4 animate-shake">
+            <i className="fas fa-exclamation-triangle text-rose-500"></i>
+            <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">{error}</p>
           </div>
         )}
 
-        <div className="mt-12">
+        <div className="mt-16">
           <button 
             onClick={triggerAnalysis}
             disabled={!file || isParsing}
-            className="w-full py-6 bg-indigo-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] hover:bg-indigo-700 transition-all disabled:opacity-20 shadow-[0_20px_40px_rgba(99,102,241,0.2)] active:scale-95 flex items-center justify-center gap-4"
+            className="btn-crystal w-full py-6 text-white rounded-[2.5rem] font-black text-xs uppercase tracking-[0.4em] disabled:opacity-30"
           >
-            {isParsing ? 'Neural Syncing...' : 'Initiate Deep Audit'}
-            {!isParsing && <i className="fas fa-bolt-lightning text-[10px]"></i>}
+            {isParsing ? 'Processing Payload...' : 'Initiate Deep Audit'}
           </button>
         </div>
       </div>
-
-      <div className="text-center mt-24">
-        <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.6em]">
-          HireAI Infrastructure v4.4.2 — Encrypted Payload Handlers Active
-        </p>
-      </div>
-
-      <style>{`
-        @keyframes scan {
-          0%, 100% { top: 0%; opacity: 0; }
-          5% { opacity: 1; }
-          95% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
-        .animate-shake {
-          animation: shake 0.4s ease-in-out;
-        }
-      `}</style>
     </div>
   );
 };

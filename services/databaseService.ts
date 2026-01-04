@@ -1,6 +1,64 @@
 
 import { supabase } from './supabaseClient';
-import { ResumeAnalysisResult, ReadinessScore, CodingChallenge } from '../types';
+import { ResumeAnalysisResult, ReadinessScore, CodingChallenge, User } from '../types';
+
+/**
+ * Checks if a user is an authorized placement portal admin.
+ */
+export const checkPortalAdminStatus = async (userId: string) => {
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from('placement_portal_admins')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  
+  if (error) return null;
+  return data;
+};
+
+/**
+ * Registers a new Placement Portal Admin.
+ */
+export const registerPortalAdmin = async (adminData: { 
+  userId: string, 
+  name: string, 
+  department: string, 
+  designation: string 
+}) => {
+  const { data, error } = await supabase
+    .from('placement_portal_admins')
+    .insert({
+      user_id: adminData.userId,
+      full_name: adminData.name,
+      department: adminData.department,
+      designation: adminData.designation
+    });
+  
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * Saves or updates user profile metadata.
+ */
+export const updateUserProfile = async (userId: string, profile: Partial<User>) => {
+  if (!userId) return null;
+  
+  const { data, error } = await supabase.auth.updateUser({
+    data: { 
+      college: profile.college,
+      department: profile.department,
+      phone: profile.phone,
+      rollNumber: profile.rollNumber,
+      graduationYear: profile.graduationYear,
+      display_name: profile.name
+    }
+  });
+
+  if (error) throw error;
+  return data;
+};
 
 /**
  * Saves or updates resume analysis results.
@@ -13,7 +71,7 @@ export const saveResumeData = async (userId: string, role: string, result: Resum
     target_role: role,
     skills: result.skills,
     missing_skills: result.missingSkills,
-    score: Math.round(result.score || 0), // Ensure integer for DB
+    score: Math.round(result.score || 0),
     suggestions: result.suggestions,
     education: result.education,
     experience: result.experience,
@@ -50,7 +108,7 @@ export const saveResumeData = async (userId: string, role: string, result: Resum
 };
 
 /**
- * Saves the entire session result including transcript and code.
+ * Saves the entire session result.
  */
 export const saveFinalVerdict = async (
   userId: string, 
@@ -63,10 +121,16 @@ export const saveFinalVerdict = async (
 ) => {
   if (!userId) return null;
 
+  const { data: { user } } = await supabase.auth.getUser();
+  const meta = user?.user_metadata;
+
   const { data, error } = await supabase
     .from('assessments')
     .insert({
       user_id: userId,
+      user_name: meta?.display_name || user?.email?.split('@')[0] || 'Candidate',
+      user_email: user?.email,
+      user_dept: meta?.department || 'General',
       target_role: role,
       overall_score: Math.round(verdict.overall || 0),
       resume_score: Math.round(verdict.resume || 0),
@@ -80,10 +144,7 @@ export const saveFinalVerdict = async (
       created_at: new Date().toISOString()
     });
 
-  if (error) {
-    console.error("Supabase INSERT Error (Full Session):", JSON.stringify(error, null, 2));
-    throw error;
-  }
+  if (error) throw error;
   return data;
 };
 
@@ -95,9 +156,16 @@ export const getUserHistory = async (userId: string) => {
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error("Supabase SELECT Error:", error.message || error);
-    throw error;
-  }
+  if (error) throw error;
+  return data;
+};
+
+export const getAllAssessments = async () => {
+  const { data, error } = await supabase
+    .from('assessments')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
   return data;
 };

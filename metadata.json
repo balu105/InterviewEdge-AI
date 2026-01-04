@@ -1,6 +1,6 @@
 {
-  "name": "InterviewEdge AI",
-  "description": "A comprehensive AI-driven platform for college students to enhance interview readiness through resume analysis, technical assessments, and simulated mock interviews.",
+  "name": "HireAI | Celestial Enterprise Suite",
+  "description": "A high-fidelity AI-driven platform for enterprise-grade student interview readiness, featuring neural resume auditing, technical proctoring, and live voice simulations.",
   "requestFramePermissions": [
     "camera",
     "microphone"

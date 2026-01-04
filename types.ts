@@ -9,15 +9,31 @@ export enum AppStage {
   RESUME = 'RESUME',
   FORGE = 'FORGE',
   INTERVIEW = 'INTERVIEW',
-  VERDICT = 'VERDICT'
+  VERDICT = 'VERDICT',
+  PLACEMENT_OFFICE = 'PLACEMENT_OFFICE',
+  PROFILE = 'PROFILE'
 }
 
+export type PlacementStatus = 
+  | 'RESUME_READY' 
+  | 'CODING_QUALIFIED' 
+  | 'INTERVIEW_READY' 
+  | 'SHORTLISTED' 
+  | 'OFFERED' 
+  | 'PLACED' 
+  | 'IDLE';
+
 export interface User {
+  id?: string;
   name: string;
   email: string;
   avatar?: string;
   joinedDate: string;
   college?: string;
+  department?: string;
+  phone?: string;
+  rollNumber?: string;
+  graduationYear?: string;
 }
 
 export interface ResumeAnalysisResult {
@@ -53,13 +69,23 @@ export interface ReadinessScore {
   feedback: string;
   methodologyNote: string;
   isEligible: boolean;
+  behavioralTraits?: string[];
 }
 
 export interface AssessmentRecord {
   id: string;
+  user_id: string;
   target_role: string;
   overall_score: number;
   technical_score: number;
+  resume_score?: number;
+  communication_score?: number;
   created_at: string;
   integrity_breach: boolean;
+  feedback?: string;
+  placement_status?: PlacementStatus;
+  user_email?: string; 
+  user_name?: string;  
+  user_dept?: string;  
+  behavioralTraits?: string[];
 }

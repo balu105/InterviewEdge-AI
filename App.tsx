@@ -11,6 +11,10 @@ import { MockInterview } from './components/MockInterview';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
 import { ProjectAbout } from './components/ProjectAbout';
+import { PlacementProfile } from './components/PlacementProfile';
+import { PlacementPortal } from './components/PlacementPortal';
+import { PlacementOfficerDashboard } from './components/PlacementOfficerDashboard';
+import { UserProfile } from './components/UserProfile';
 import { analyzeResume, evaluateFinalReadiness } from './services/geminiService';
 import { supabase } from './services/supabaseClient';
 import { saveResumeData, saveFinalVerdict, getUserHistory } from './services/databaseService';
@@ -18,290 +22,262 @@ import { saveResumeData, saveFinalVerdict, getUserHistory } from './services/dat
 const App: React.FC = () => {
   const [stage, setStage] = useState<AppStage>(AppStage.LANDING);
   const [user, setUser] = useState<User | null>(null);
+  const [showPortalForm, setShowPortalForm] = useState(false);
+  const [facultyView, setFacultyView] = useState(false);
+  const [isFacultyEntryMode, setIsFacultyEntryMode] = useState(false);
   
-  // Data State
   const [targetRole, setTargetRole] = useState('');
   const [resumeResults, setResumeResults] = useState<ResumeAnalysisResult | null>(null);
   const [assessmentHistory, setAssessmentHistory] = useState<AssessmentRecord[]>([]);
   
-  // Technical Phase State
   const [technicalScore, setTechnicalScore] = useState<number>(0);
   const [hasCheated, setHasCheated] = useState(false);
   const [codingChallenges, setCodingChallenges] = useState<CodingChallenge[]>([]);
   const [userSubmissions, setUserSubmissions] = useState<Record<string, string>>({});
 
-  // Final Results State
   const [finalScore, setFinalScore] = useState<ReadinessScore | null>(null);
   const [interviewTranscript, setInterviewTranscript] = useState<string>('');
   
-  // UI State
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [unlockedStages, setUnlockedStages] = useState<Set<AppStage>>(new Set([AppStage.HUB, AppStage.TARGET]));
 
-  // Restore session from Supabase on mount
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          name: session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || "User",
-          email: session.user.email || "",
-          joinedDate: new Date(session.user.created_at).toLocaleDateString()
-        });
-        setStage(AppStage.HUB);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [stage, showPortalForm, facultyView]);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      if (supabaseUser) {
+        syncUserData(supabaseUser);
       }
-    });
+    };
+    checkUser();
   }, []);
 
-  // Re-fetch history whenever we hit the Hub
-  useEffect(() => {
-    if (user && stage === AppStage.HUB) {
-      const loadHistory = async () => {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-          try {
-            const history = await getUserHistory(authUser.id);
-            setAssessmentHistory(history);
-          } catch (e) {
-            console.error("History fetch failed", e);
-          }
-        }
-      };
-      loadHistory();
-    }
-  }, [user, stage]);
+  const syncUserData = async (supabaseUser: any) => {
+    const history = await getUserHistory(supabaseUser.id);
+    setAssessmentHistory(history);
+    
+    const meta = supabaseUser.user_metadata;
+    setUser({
+      id: supabaseUser.id,
+      name: meta?.display_name || supabaseUser.email?.split('@')[0] || "Candidate",
+      email: supabaseUser.email || "",
+      joinedDate: new Date(supabaseUser.created_at).toLocaleDateString(),
+      college: meta?.college,
+      department: meta?.department,
+      phone: meta?.phone,
+      rollNumber: meta?.rollNumber,
+      graduationYear: meta?.graduationYear
+    });
+  };
 
-  const handleAuthSuccess = (u: User) => {
+  const handleAuthSuccess = async (u: User) => {
     setUser(u);
-    setStage(AppStage.HUB);
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+    if (supabaseUser) await syncUserData(supabaseUser);
+
+    if (isFacultyEntryMode) {
+      setFacultyView(true);
+      setStage(AppStage.PLACEMENT_OFFICE);
+    } else {
+      setStage(AppStage.HUB);
+    }
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setShowPortalForm(false);
+    setFacultyView(false);
+    setIsFacultyEntryMode(false);
     setStage(AppStage.LANDING);
-    setUnlockedStages(new Set([AppStage.HUB, AppStage.TARGET]));
-    setResumeResults(null);
-    setFinalScore(null);
-    setError(null);
-    setHasCheated(false);
   };
 
-  const handleRoleSelect = (role: string) => {
+  const handleStartDeployment = () => {
+    setStage(AppStage.TARGET);
+  };
+
+  const handleRoleSelection = (role: string) => {
     setTargetRole(role);
-    setUnlockedStages(prev => new Set(prev).add(AppStage.RESUME));
     setStage(AppStage.RESUME);
-    setError(null);
   };
 
-  const handleResumeAnalysis = async (text: string) => {
+  const handleResumeUpload = async (text: string) => {
     setIsProcessing(true);
-    setError(null);
     try {
-      const results = await analyzeResume(text, targetRole);
+      const result = await analyzeResume(text, targetRole);
+      setResumeResults(result);
       
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        try {
-          await saveResumeData(authUser.id, targetRole, results);
-        } catch (dbErr: any) {
-          console.error("Database Sync Error:", dbErr);
-        }
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      if (supabaseUser) {
+        await saveResumeData(supabaseUser.id, targetRole, result);
       }
-
-      setResumeResults(results);
-      setUnlockedStages(prev => new Set(prev).add(AppStage.FORGE));
+      
       setStage(AppStage.FORGE);
-    } catch (err: any) {
-      console.error("Resume Analysis Error:", err);
-      setError(err.message || "Neural processing interrupted.");
+    } catch (err) {
+      console.error("Vector analysis failed:", err);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleAssessmentComplete = (score: number, cheated: boolean, challenges: CodingChallenge[], submissions: Record<string, string>) => {
+  const handleTechnicalComplete = (score: number, cheated: boolean, challenges: CodingChallenge[], submissions: Record<string, string>) => {
     setTechnicalScore(score);
     setHasCheated(cheated);
     setCodingChallenges(challenges);
     setUserSubmissions(submissions);
-    setUnlockedStages(prev => new Set(prev).add(AppStage.INTERVIEW));
     setStage(AppStage.INTERVIEW);
-    setError(null);
   };
 
   const handleInterviewComplete = async (transcript: string) => {
-    setIsProcessing(true);
-    setError(null);
     setInterviewTranscript(transcript);
-    
+    setIsProcessing(true);
     try {
-      // 1. Get AI evaluation first (so we have results even if DB fails)
-      const final = await evaluateFinalReadiness(
+      const result = await evaluateFinalReadiness(
         resumeResults?.score || 0,
         technicalScore,
         transcript,
         hasCheated
       );
+      setFinalScore(result);
       
-      const enrichedFinal = {
-        ...final,
-        methodologyNote: `Weighted Readiness Vector: Resume (${final.resume}%), Technical (${final.technical}%), Comm (${final.communication}%). Integrity Gating: ${hasCheated ? 'FAILED' : 'PASSED'}.`
-      };
-
-      setFinalScore(enrichedFinal);
-
-      // 2. Attempt Background Database Save
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        try {
-          await saveFinalVerdict(
-            authUser.id, 
-            targetRole, 
-            enrichedFinal, 
-            transcript, 
-            codingChallenges, 
-            userSubmissions, 
-            hasCheated
-          );
-        } catch (dbErr: any) {
-          console.error("Supabase Sync Failed:", dbErr);
-          // Only show error message if it's the schema mismatch issue
-          if (dbErr.code === 'PGRST204' || dbErr.message?.includes('schema cache')) {
-            setError("SCHEMA MISMATCH: Run the SQL script to add missing columns to your Supabase table.");
-          }
-        }
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      if (supabaseUser) {
+        await saveFinalVerdict(
+          supabaseUser.id,
+          targetRole,
+          result,
+          transcript,
+          codingChallenges,
+          userSubmissions,
+          hasCheated
+        );
+        syncUserData(supabaseUser);
       }
-
-      // 3. Move to result page regardless of DB status (for better UX)
-      setUnlockedStages(prev => new Set(prev).add(AppStage.VERDICT));
+      
       setStage(AppStage.VERDICT);
-    } catch (err: any) {
-      console.error("Final Evaluation Error:", err);
-      setError("AI Analysis encountered an error. Please retry.");
+    } catch (err) {
+      console.error("Verdict generation failed:", err);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const navigateTo = (newStage: AppStage) => {
-    if (user && unlockedStages.has(newStage)) {
-      setStage(newStage);
-      setError(null);
+  const calculateProgress = () => {
+    let p = 0;
+    if (targetRole) p += 15;
+    if (resumeResults) p += 15;
+    if (technicalScore > 0 || codingChallenges.length > 0) p += 20;
+    if (interviewTranscript) p += 50;
+    return p;
+  };
+
+  const navigateToOffice = () => {
+    if (user) {
+      setStage(AppStage.PLACEMENT_OFFICE);
+    } else {
+      setIsFacultyEntryMode(true);
+      setStage(AppStage.LOGIN);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#0c0e14] text-slate-100 relative">
-      <div className="mesh-bg"></div>
-      <div className="noise-overlay"></div>
+  const handleProfileUpdate = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
 
-      {user && (
-        <Header 
-          currentStage={stage} 
-          user={user} 
-          onNavigate={navigateTo} 
-          onLogout={handleLogout} 
-          locked={!resumeResults}
-        />
-      )}
+  const renderStage = () => {
+    if (stage === AppStage.PLACEMENT_OFFICE) {
+      if (!user) return <AuthPage onSuccess={handleAuthSuccess} onBack={() => { setStage(AppStage.LANDING); setIsFacultyEntryMode(false); }} />;
       
-      <main className={user ? "pt-16 pb-12" : ""}>
-        {error && (
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-2xl bg-slate-900/90 backdrop-blur-2xl border border-rose-500/30 p-6 rounded-[2.5rem] flex items-center justify-between shadow-2xl animate-fadeInDown ring-1 ring-rose-500/20">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-rose-500/10 rounded-full flex items-center justify-center border border-rose-500/20">
-                <i className="fas fa-triangle-exclamation text-rose-500 text-lg"></i>
-              </div>
-              <div className="flex-1">
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-0.5">Neural System Alert</div>
-                <p className="text-xs font-bold text-slate-200 leading-tight">{error}</p>
-              </div>
+      if (facultyView) {
+        return <PlacementOfficerDashboard />;
+      }
+
+      if (showPortalForm) {
+        return <PlacementPortal 
+                  user={user} 
+                  history={assessmentHistory} 
+                  onBack={() => { setShowPortalForm(false); setStage(AppStage.HUB); }} 
+                  onFacultyEnter={() => { setFacultyView(true); setShowPortalForm(false); }}
+                />;
+      }
+      return <PlacementProfile user={user} history={assessmentHistory} />;
+    }
+
+    switch (stage) {
+      case AppStage.LANDING:
+        return <LandingPage onStart={(s) => {
+          if (s === AppStage.PLACEMENT_OFFICE) {
+            navigateToOffice();
+          } else {
+            setIsFacultyEntryMode(false);
+            setStage(s);
+          }
+        }} />;
+      case AppStage.LOGIN:
+      case AppStage.REGISTER:
+        return <AuthPage onSuccess={handleAuthSuccess} onBack={() => { setStage(AppStage.LANDING); setIsFacultyEntryMode(false); }} />;
+      case AppStage.PROJECT_DETAILS:
+        return <ProjectAbout />;
+      case AppStage.HUB:
+        return <HubDashboard onStart={handleStartDeployment} progress={calculateProgress()} history={assessmentHistory} />;
+      case AppStage.PROFILE:
+        return user ? <UserProfile user={user} onUpdate={handleProfileUpdate} history={assessmentHistory} /> : null;
+      case AppStage.TARGET:
+        return <RoleTrackSelection onSelect={handleRoleSelection} />;
+      case AppStage.RESUME:
+        return <ResumeBenchmarking onUpload={handleResumeUpload} />;
+      case AppStage.FORGE:
+        return <TechnicalAssessment targetRole={targetRole} onComplete={handleTechnicalComplete} />;
+      case AppStage.INTERVIEW:
+        return <MockInterview targetRole={targetRole} onComplete={handleInterviewComplete} />;
+      case AppStage.VERDICT:
+        if (!finalScore || !resumeResults) return null;
+        return <Dashboard score={finalScore} resumeData={resumeResults} onRestart={() => setStage(AppStage.HUB)} />;
+      default:
+        return <LandingPage onStart={(s) => {
+          if (s === AppStage.PLACEMENT_OFFICE) navigateToOffice();
+          else { setIsFacultyEntryMode(false); setStage(s); }
+        }} />;
+    }
+  };
+
+  const isPostLogin = user !== null && ![AppStage.LANDING, AppStage.LOGIN, AppStage.REGISTER, AppStage.PROJECT_DETAILS].includes(stage);
+
+  return (
+    <div className="min-h-screen text-slate-900 transition-all duration-700 ease-in-out">
+      <Header 
+        currentStage={stage} 
+        user={user} 
+        onNavigate={(s) => {
+          if (s === AppStage.PLACEMENT_OFFICE) navigateToOffice();
+          else { 
+            setStage(s); 
+            setShowPortalForm(false); 
+            setFacultyView(false); 
+            setIsFacultyEntryMode(false); 
+          }
+        }} 
+        onLogout={handleLogout}
+        locked={hasCheated && stage !== AppStage.VERDICT}
+        isFacultyView={facultyView}
+        onExitFaculty={() => { setFacultyView(false); setStage(AppStage.HUB); }}
+      />
+      
+      <main className={`pb-20 relative z-10 transition-all duration-500 ${isPostLogin ? 'pt-28 sm:pt-40' : 'pt-0'}`}>
+        {isProcessing ? (
+          <div className="flex flex-col items-center justify-center py-40 animate-fadeIn">
+            <div className="relative w-24 h-24 mb-10">
+              <div className="absolute inset-0 border-8 border-indigo-50 rounded-full"></div>
+              <div className="absolute inset-0 border-t-8 border-indigo-600 rounded-full animate-spin"></div>
             </div>
-            <button onClick={() => setError(null)} className="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center text-slate-400 transition-colors">
-              <i className="fas fa-times"></i>
-            </button>
+            <h2 className="text-2xl font-black uppercase tracking-[0.3em] text-indigo-900 animate-pulse text-center px-4">Syncing Neural Data</h2>
+            <p className="text-slate-400 text-xs font-bold mt-4 tracking-widest uppercase">Initializing Assessment Engine</p>
           </div>
+        ) : (
+          renderStage()
         )}
-
-        {isProcessing && (
-          <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center animate-fadeIn">
-            <div className="relative">
-               <div className="w-24 h-24 border-2 border-indigo-500/20 rounded-full"></div>
-               <div className="absolute inset-0 w-24 h-24 border-t-2 border-indigo-500 rounded-full animate-spin"></div>
-               <div className="absolute inset-4 bg-indigo-500/10 rounded-full animate-pulse"></div>
-            </div>
-            <div className="mt-10 text-center space-y-2">
-              <h2 className="text-xl font-black text-white tracking-[0.4em] uppercase">Neural Analysis</h2>
-              <p className="text-[10px] font-bold text-indigo-400/60 uppercase tracking-widest animate-pulse">Synchronizing Session Data...</p>
-            </div>
-          </div>
-        )}
-
-        <div className="animate-fadeIn">
-          {stage === AppStage.LANDING && (
-            <LandingPage onStart={(target) => setStage(target)} />
-          )}
-
-          {stage === AppStage.PROJECT_DETAILS && (
-            <div className="pt-24">
-              <ProjectAbout />
-              <div className="flex justify-center mt-12">
-                <button 
-                  onClick={() => setStage(AppStage.LANDING)}
-                  className="px-8 py-4 glass-panel rounded-2xl text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] hover:text-white transition-all"
-                >
-                  <i className="fas fa-terminal mr-2"></i> Return to Terminal
-                </button>
-              </div>
-            </div>
-          )}
-
-          {(stage === AppStage.LOGIN || stage === AppStage.REGISTER) && !user && (
-            <AuthPage 
-              onSuccess={handleAuthSuccess} 
-              onBack={() => setStage(AppStage.LANDING)} 
-            />
-          )}
-
-          {stage === AppStage.HUB && user && (
-            <HubDashboard 
-              onStart={() => navigateTo(AppStage.TARGET)} 
-              progress={resumeResults ? (unlockedStages.size / 6) * 100 : 0}
-              history={assessmentHistory}
-            />
-          )}
-
-          {stage === AppStage.TARGET && user && (
-            <RoleTrackSelection onSelect={handleRoleSelect} />
-          )}
-
-          {stage === AppStage.RESUME && user && (
-            <ResumeBenchmarking onUpload={handleResumeAnalysis} />
-          )}
-
-          {stage === AppStage.FORGE && user && (
-            <TechnicalAssessment 
-              targetRole={targetRole} 
-              onComplete={handleAssessmentComplete} 
-            />
-          )}
-
-          {stage === AppStage.INTERVIEW && user && (
-            <MockInterview 
-              targetRole={targetRole} 
-              onComplete={handleInterviewComplete} 
-            />
-          )}
-
-          {stage === AppStage.VERDICT && user && finalScore && resumeResults && (
-            <Dashboard 
-              score={finalScore} 
-              resumeData={resumeResults} 
-              onRestart={() => setStage(AppStage.HUB)} 
-            />
-          )}
-        </div>
       </main>
     </div>
   );
