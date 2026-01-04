@@ -2,9 +2,12 @@
 import { createClient } from '@supabase/supabase-js';
 
 const getEnv = (key: string, fallback: string) => {
-  const val = process.env[key];
-  if (!val || val.trim() === '') return fallback;
-  return val.trim();
+  // In a Vite environment, we use process.env which is shimmed in vite.config.ts
+  const val = process.env && (process.env[key] || (process.env as any)[`VITE_${key}`]);
+  if (val && val.trim() !== '') return val.trim();
+  
+  // Fallback to hardcoded defaults for local development if env is missing
+  return fallback;
 };
 
 const supabaseUrl = getEnv('SUPABASE_URL', 'https://apnwdwafkdhqtubgwrik.supabase.co');

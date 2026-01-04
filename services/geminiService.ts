@@ -7,9 +7,11 @@ import { ResumeAnalysisResult, ReadinessScore, CodingChallenge } from "../types"
  * Guidelines require new instance per call for Gemini 3 / Veo workflows.
  */
 const getAI = () => {
-  const apiKey = process.env.API_KEY;
+  // Check both standard and VITE_ prefixed environment variables
+  const apiKey = process.env.API_KEY || (process.env as any).VITE_API_KEY;
+  
   if (!apiKey) {
-    throw new Error("MISSING_API_KEY");
+    throw new Error("MISSING_API_KEY: Ensure API_KEY or VITE_API_KEY is set in environment variables.");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -34,7 +36,7 @@ export const suggestJobRoles = async (resumeText: string): Promise<string[]> => 
 export const analyzeResume = async (resumeText: string, targetRole: string): Promise<ResumeAnalysisResult> => {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview', // Complex reasoning
+    model: 'gemini-3-pro-preview', 
     contents: `Analyze this resume for a ${targetRole} position:
     ${resumeText}
     Provide a detailed JSON analysis.`,
@@ -146,5 +148,5 @@ export const evaluateFinalReadiness = async (
   });
   
   const result = JSON.parse(response.text || '{}');
-  return { ...result, isEligible: eligibilityFlag };
+  return { ...result, isEligible: eligibilityFlag, methodologyNote: "Integrated AI Scoring" };
 };
