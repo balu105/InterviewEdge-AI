@@ -5,7 +5,11 @@ import { ResumeAnalysisResult, ReadinessScore, CodingChallenge } from "../types"
  * Helper to get a fresh AI instance.
  */
 const getAI = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY_MISSING: The Gemini API key is not configured in the environment. Please ensure API_KEY is set in your deployment settings.");
+  }
+  return new GoogleGenAI({ apiKey });
 };
 
 /**
@@ -18,6 +22,12 @@ async function callWithRetry<T>(fn: () => Promise<T>, maxRetries = 3, initialDel
       return await fn();
     } catch (error: any) {
       const errorMsg = error?.message || "";
+      
+      // Pass through our custom configuration errors directly
+      if (errorMsg.includes("API_KEY_MISSING")) {
+        throw error;
+      }
+
       const isQuotaError = errorMsg.includes("429") || error?.status === "RESOURCE_EXHAUSTED" || errorMsg.toLowerCase().includes("quota");
       const isTransientError = error?.code === 500 || error?.status === 500 || error?.status === 503 || errorMsg.includes("xhr error") || errorMsg.includes("Rpc failed");
 
