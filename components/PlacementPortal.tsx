@@ -2,26 +2,23 @@
 import React, { useState } from 'react';
 import { User, AssessmentRecord } from '../types';
 import { supabase } from '../services/supabaseClient';
-import { checkPortalAdminStatus, registerPortalAdmin } from '../services/databaseService';
+import { checkPortalAdminStatus } from '../services/databaseService';
 
 interface PlacementPortalProps {
-  user: User;
+  user: User | null;
   history: AssessmentRecord[];
   onBack: () => void;
   onFacultyEnter: () => void;
 }
 
-export const PlacementPortal: React.FC<PlacementPortalProps> = ({ user, history, onBack, onFacultyEnter }) => {
-  const [authMode, setAuthMode] = useState<'CHOICE' | 'ADMIN_LOGIN' | 'ADMIN_REGISTER' | 'VERIFYING'>('CHOICE');
+export const PlacementPortal: React.FC<PlacementPortalProps> = ({ user, onBack, onFacultyEnter }) => {
+  const [authMode, setAuthMode] = useState<'CHOICE' | 'ADMIN_LOGIN' | 'VERIFYING'>('CHOICE');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [adminName, setAdminName] = useState('');
-  const [department, setDepartment] = useState('');
-  const [designation, setDesignation] = useState('');
 
   const handleAdminAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,47 +26,30 @@ export const PlacementPortal: React.FC<PlacementPortalProps> = ({ user, history,
     setError(null);
 
     try {
-      if (authMode === 'ADMIN_REGISTER') {
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        if (authError) throw authError;
-        if (!authData.user) throw new Error("Authentication failed");
+      // Step 1: Standard Supabase Login
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        await registerPortalAdmin({
-          userId: authData.user.id,
-          name: adminName,
-          department,
-          designation
-        });
+      if (authError) throw authError;
+      
+      if (authData.user) {
+        // Step 2: Strict Role Verification against the placement_portal_admins table
+        const adminStatus = await checkPortalAdminStatus(authData.user.id);
         
-        setAuthMode('ADMIN_LOGIN');
-        alert("Registration successful. Please login with your credentials.");
-      } else {
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (authError) throw authError;
-        
-        if (authData.user) {
-          // ISOLATION SECURITY CHECK:
-          // Check if this user ID is NOT in the admin table.
-          const adminStatus = await checkPortalAdminStatus(authData.user.id);
-          
-          if (!adminStatus) {
-            // Force sign out because this is a Student account trying to enter the Director portal
-            await supabase.auth.signOut();
-            throw new Error("ACCESS DENIED: You are logged in as a Student. Student accounts are not permitted to access the Placement Intelligence Console.");
-          }
-
-          setAuthMode('VERIFYING');
-          setTimeout(() => onFacultyEnter(), 1500);
+        if (!adminStatus) {
+          // Failure: Sign out immediately if they are not authorized faculty
+          await supabase.auth.signOut();
+          throw new Error("UNAUTHORIZED ACCESS: You are not registered in the Faculty Intelligence Registry. Please contact the administrator.");
         }
+
+        // Success: Proceed to faculty dashboard
+        setAuthMode('VERIFYING');
+        setTimeout(() => onFacultyEnter(), 1500);
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred.");
+      setError(err.message || "Institutional authentication protocols failed.");
     } finally {
       setLoading(false);
     }
@@ -87,33 +67,33 @@ export const PlacementPortal: React.FC<PlacementPortalProps> = ({ user, history,
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="glass-card p-12 rounded-[3rem] border border-white space-y-8 flex flex-col justify-between group hover:border-indigo-200 transition-all">
+          <div className="glass-card p-12 rounded-[3rem] border border-white space-y-8 flex flex-col justify-between group hover:border-indigo-200 transition-all bg-white/60">
             <div className="space-y-4">
               <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-900 group-hover:scale-110 transition-transform">
                 <i className="fas fa-user-graduate text-xl"></i>
               </div>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">Student Portfolio</h3>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">Access your verified professional credentials and placement readiness certificate.</p>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">Student Hub</h3>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">Access your professional portfolio and readiness certifications.</p>
             </div>
             <button 
-              onClick={() => { setAuthMode('VERIFYING'); setTimeout(() => onBack(), 1000); }}
-              className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl"
+              onClick={() => onBack()}
+              className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-black transition-all"
             >
-              Verify My Identity
+              Verify Identity
             </button>
           </div>
 
-          <div className="glass-card p-12 rounded-[3rem] border border-white space-y-8 flex flex-col justify-between group hover:border-indigo-400 transition-all">
+          <div className="glass-card p-12 rounded-[3rem] border border-white space-y-8 flex flex-col justify-between group hover:border-indigo-400 transition-all bg-white/60">
             <div className="space-y-4">
               <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                <i className="fas fa-crown text-xl"></i>
+                <i className="fas fa-user-shield text-xl"></i>
               </div>
               <h3 className="text-2xl font-black text-slate-900 tracking-tight">Faculty Console</h3>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">Secure access for Placement Officers, Directors, and authorized academic staff.</p>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">Encrypted portal for Placement Officers and institutional leadership.</p>
             </div>
             <button 
               onClick={() => setAuthMode('ADMIN_LOGIN')}
-              className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl"
+              className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-indigo-700 transition-all"
             >
               Officer Login
             </button>
@@ -132,7 +112,7 @@ export const PlacementPortal: React.FC<PlacementPortalProps> = ({ user, history,
         </div>
         <div className="space-y-3">
           <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Decrypting Vault</h2>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Syncing Institutional Intelligence Core</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Syncing Institutional Core</p>
         </div>
       </div>
     );
@@ -144,73 +124,60 @@ export const PlacementPortal: React.FC<PlacementPortalProps> = ({ user, history,
         <i className="fas fa-arrow-left"></i> Back to Selection
       </button>
 
-      <div className="glass-card p-10 md:p-14 rounded-[3.5rem] border border-white shadow-2xl relative overflow-hidden">
+      <div className="glass-card p-10 md:p-14 rounded-[3.5rem] border border-white shadow-2xl relative overflow-hidden bg-white/80">
         <div className="absolute top-0 left-0 w-full h-1.5 bg-indigo-600"></div>
-        <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-2">
-          {authMode === 'ADMIN_LOGIN' ? 'Officer Login' : 'Register Admin'}
-        </h2>
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-10">Institutional Access Domain</p>
+        <div className="flex justify-between items-start mb-10">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Officer Auth</h2>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Institutional Access Domain</p>
+          </div>
+          <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+             <i className="fas fa-lock"></i>
+          </div>
+        </div>
 
         <form onSubmit={handleAdminAuth} className="space-y-6">
-          {authMode === 'ADMIN_REGISTER' && (
-            <div className="space-y-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Work Email</label>
               <input 
-                type="text" placeholder="Full Professional Name" required
-                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:border-indigo-600 outline-none"
-                value={adminName} onChange={e => setAdminName(e.target.value)}
-              />
-              <select 
-                required className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:border-indigo-600 outline-none"
-                value={department} onChange={e => setDepartment(e.target.value)}
-              >
-                <option value="">Select Department</option>
-                <option value="Placement Cell">Placement Cell</option>
-                <option value="CSE Department">CSE Department</option>
-                <option value="ECE Department">ECE Department</option>
-                <option value="Director Office">Director Office</option>
-              </select>
-              <input 
-                type="text" placeholder="Designation (e.g. Training Officer)" required
-                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:border-indigo-600 outline-none"
-                value={designation} onChange={e => setDesignation(e.target.value)}
+                type="email" placeholder="officer@university.edu" required
+                className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:border-indigo-600 outline-none shadow-inner"
+                value={email} onChange={e => setEmail(e.target.value)}
               />
             </div>
-          )}
-
-          <div className="space-y-4">
-            <input 
-              type="email" placeholder="Official Email" required
-              className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:border-indigo-600 outline-none"
-              value={email} onChange={e => setEmail(e.target.value)}
-            />
-            <input 
-              type="password" placeholder="Access Password" required
-              className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:border-indigo-600 outline-none"
-              value={password} onChange={e => setPassword(e.target.value)}
-            />
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Secret Key</label>
+              <input 
+                type="password" placeholder="••••••••" required
+                className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:border-indigo-600 outline-none shadow-inner"
+                value={password} onChange={e => setPassword(e.target.value)}
+              />
+            </div>
           </div>
 
           {error && (
-            <div className="p-4 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-rose-100 text-center animate-shake">
+            <div className="p-5 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-rose-100 leading-relaxed text-center animate-shake">
+              <i className="fas fa-exclamation-triangle mr-2"></i>
               {error}
             </div>
           )}
 
-          <button 
-            type="submit" disabled={loading}
-            className="w-full py-6 bg-indigo-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] shadow-xl hover:bg-indigo-700 transition-all disabled:opacity-50"
-          >
-            {loading ? <i className="fas fa-spinner fa-spin mr-2"></i> : null}
-            {authMode === 'ADMIN_LOGIN' ? 'Authorize Access' : 'Register Officer'}
-          </button>
+          <div className="pt-4">
+            <button 
+              type="submit" disabled={loading}
+              className="w-full py-6 bg-indigo-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] shadow-xl hover:bg-indigo-700 transition-all disabled:opacity-50"
+            >
+              {loading ? <i className="fas fa-circle-notch fa-spin mr-3"></i> : null}
+              Authorize Access
+            </button>
+          </div>
 
-          <button 
-            type="button"
-            onClick={() => setAuthMode(authMode === 'ADMIN_LOGIN' ? 'ADMIN_REGISTER' : 'ADMIN_LOGIN')}
-            className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors"
-          >
-            {authMode === 'ADMIN_LOGIN' ? "Request Admin Credentials" : "I have an admin account"}
-          </button>
+          <div className="text-center py-4">
+             <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+               Authorized Personnel Only • Audit Logging Active
+             </p>
+          </div>
         </form>
       </div>
     </div>

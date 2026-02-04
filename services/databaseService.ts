@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { ResumeAnalysisResult, ReadinessScore, CodingChallenge, User } from '../types';
+import { ResumeAnalysisResult, ReadinessScore, CodingChallenge, User, InterventionStatus } from '../types';
 
 /**
  * Checks if a user is an authorized placement portal admin.
@@ -144,6 +144,22 @@ export const saveFinalVerdict = async (
       created_at: new Date().toISOString()
     });
 
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * Updates the intervention status of a specific assessment.
+ */
+export const updateAssessmentIntervention = async (assessmentId: string, status: InterventionStatus) => {
+  const { data, error } = await supabase
+    .from('assessments')
+    .update({ 
+      intervention_status: status,
+      last_contacted: new Date().toISOString()
+    })
+    .eq('id', assessmentId);
+  
   if (error) throw error;
   return data;
 };

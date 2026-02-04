@@ -1,12 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppStage, User, ResumeAnalysisResult, ReadinessScore, CodingChallenge, AssessmentRecord } from './types';
 import { Header } from './components/Header';
 import { AuthPage } from './components/AuthPage';
+import { PlacementOfficerLogin } from './components/PlacementOfficerLogin';
 import { HubDashboard } from './components/HubDashboard';
 import { RoleTrackSelection } from './components/RoleTrackSelection';
 import { ResumeBenchmarking } from './components/ResumeBenchmarking';
 import { TechnicalAssessment } from './components/TechnicalAssessment';
-// Fix: MockInterview is a default export, so import it without curly braces.
 import MockInterview from './components/MockInterview';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
@@ -187,7 +188,7 @@ const App: React.FC = () => {
       setStage(AppStage.PLACEMENT_OFFICE);
     } else {
       setIsFacultyEntryMode(true);
-      setStage(AppStage.LOGIN);
+      setStage(AppStage.PLACEMENT_OFFICE);
     }
   };
 
@@ -197,7 +198,12 @@ const App: React.FC = () => {
 
   const renderStage = () => {
     if (stage === AppStage.PLACEMENT_OFFICE) {
-      if (!user) return <AuthPage onSuccess={handleAuthSuccess} onBack={() => { setStage(AppStage.LANDING); setIsFacultyEntryMode(false); }} />;
+      if (!user) {
+        if (isFacultyEntryMode) {
+          return <PlacementOfficerLogin onSuccess={handleAuthSuccess} onBack={() => { setStage(AppStage.LANDING); setIsFacultyEntryMode(false); }} />;
+        }
+        return <AuthPage onSuccess={handleAuthSuccess} onBack={() => { setStage(AppStage.LANDING); setIsFacultyEntryMode(false); }} />;
+      }
       
       if (facultyView) {
         return <PlacementOfficerDashboard />;
@@ -232,7 +238,7 @@ const App: React.FC = () => {
       case AppStage.HUB:
         return <HubDashboard onStart={() => setStage(AppStage.TARGET)} progress={calculateProgress()} history={assessmentHistory} />;
       case AppStage.PROFILE:
-        return user ? <UserProfile user={user} onUpdate={handleProfileUpdate} history={assessmentHistory} /> : null;
+        return user ? <UserProfile user={user} onUpdate={handleProfileUpdate} onBack={() => setStage(AppStage.HUB)} history={assessmentHistory} /> : null;
       case AppStage.TARGET:
         return <RoleTrackSelection onSelect={handleRoleSelection} />;
       case AppStage.RESUME:

@@ -5,10 +5,11 @@ import { updateUserProfile } from '../services/databaseService';
 interface UserProfileProps {
   user: User;
   onUpdate: (updatedUser: User) => void;
+  onBack: () => void;
   history: AssessmentRecord[];
 }
 
-export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, history }) => {
+export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onBack, history }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<User>(user);
   const [saving, setSaving] = useState(false);
@@ -31,9 +32,24 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, histor
   const latestAssessment = history[0];
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10 animate-fadeIn space-y-12 pb-32">
+    <div className="max-w-6xl mx-auto px-6 py-10 animate-fadeIn space-y-8 pb-32">
+      {/* Navigation Layer */}
+      <div className="flex items-center justify-between">
+        <button 
+          onClick={onBack}
+          className="group flex items-center gap-3 px-6 py-3 bg-white/40 backdrop-blur-md border border-white/60 rounded-2xl text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm"
+        >
+          <i className="fas fa-arrow-left transition-transform group-hover:-translate-x-1"></i>
+          Return to Hub
+        </button>
+        <div className="hidden md:flex items-center gap-2">
+           <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Profile Integrity Secure</span>
+        </div>
+      </div>
+
       {/* Profile Header */}
-      <div className="glass-card p-12 rounded-[3.5rem] flex flex-col md:flex-row justify-between items-center gap-10 bg-slate-900/60">
+      <div className="glass-card p-12 rounded-[3.5rem] flex flex-col md:flex-row justify-between items-center gap-10 bg-slate-900/60 shadow-2xl border border-white/5">
         <div className="flex items-center gap-10">
           <div className="w-32 h-32 bg-slate-950 rounded-[2.5rem] flex items-center justify-center border border-white/10 shadow-2xl text-5xl font-black text-indigo-400">
             {user.name.charAt(0)}
@@ -63,12 +79,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, histor
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2 glass-card p-12 rounded-[4rem] space-y-12">
+        <div className="lg:col-span-2 glass-card p-12 rounded-[4rem] space-y-12 bg-white/60 border border-white shadow-xl">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400 border border-indigo-500/20">
               <i className="fas fa-id-card text-xl"></i>
             </div>
-            <h2 className="text-3xl font-black text-white tracking-tight">Institutional Profile</h2>
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight">Institutional Profile</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -80,21 +96,21 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, histor
               { label: 'Contact Primary', key: 'phone', type: 'tel' }
             ].map(field => (
               <div key={field.key} className="space-y-3">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{field.label}</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{field.label}</label>
                 <input 
                   type={field.type} 
                   disabled={!isEditing}
-                  className="w-full px-8 py-5 bg-slate-950 border border-white/5 rounded-2xl font-bold text-slate-100 outline-none focus:border-indigo-500 transition-all disabled:opacity-50 shadow-inner"
+                  className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all disabled:opacity-50 shadow-inner"
                   value={(formData as any)[field.key] || ''}
                   onChange={e => setFormData({...formData, [field.key]: e.target.value})}
                 />
               </div>
             ))}
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Department</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Department</label>
               <select 
                 disabled={!isEditing}
-                className="w-full px-8 py-5 bg-slate-950 border border-white/5 rounded-2xl font-bold text-slate-100 outline-none focus:border-indigo-500 transition-all disabled:opacity-50 shadow-inner appearance-none"
+                className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all disabled:opacity-50 shadow-inner appearance-none"
                 value={formData.department || ''}
                 onChange={e => setFormData({...formData, department: e.target.value})}
               >
@@ -111,7 +127,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, histor
             <button 
               onClick={handleSave}
               disabled={saving}
-              className="btn-crystal w-full py-6 rounded-3xl font-black text-xs uppercase tracking-widest shadow-2xl mt-4"
+              className="w-full py-6 rounded-3xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest shadow-2xl mt-4 hover:bg-indigo-700 transition-all shadow-indigo-200"
             >
               {saving ? 'Syncing...' : 'Save Profile Metadata'}
             </button>
@@ -120,19 +136,19 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, histor
 
         {/* Sidebar */}
         <div className="space-y-8">
-          <div className="glass-card p-12 rounded-[3.5rem] space-y-10">
-            <h3 className="text-xl font-black text-white tracking-tight">Status Snapshot</h3>
+          <div className="glass-card p-12 rounded-[3.5rem] space-y-10 bg-white/60 border border-white shadow-xl">
+            <h3 className="text-xl font-black text-slate-800 tracking-tight">Status Snapshot</h3>
             <div className="space-y-6">
-              <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Master IQ</span>
-                <span className="text-lg font-black text-indigo-400">{latestAssessment?.overall_score || 0}%</span>
+              <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Master IQ</span>
+                <span className="text-lg font-black text-indigo-600">{latestAssessment?.overall_score || 0}%</span>
               </div>
-              <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tech Rating</span>
-                <span className="text-lg font-black text-white">{latestAssessment?.technical_score || 0}/100</span>
+              <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tech Rating</span>
+                <span className="text-lg font-black text-slate-800">{latestAssessment?.technical_score || 0}/100</span>
               </div>
             </div>
-            <div className="p-6 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 text-[10px] font-bold text-indigo-400 uppercase tracking-widest text-center leading-relaxed italic">
+            <div className="p-6 bg-indigo-50 rounded-2xl border border-indigo-100 text-[10px] font-bold text-indigo-500 uppercase tracking-widest text-center leading-relaxed italic">
               All data is proctored and verified by institutional admins
             </div>
           </div>
