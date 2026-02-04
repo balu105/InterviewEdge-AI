@@ -1,0 +1,89 @@
+.celestial-auth-card {
+  background: rgba(15, 10, 30, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 2rem;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(88, 50, 216, 0.1);
+}
+
+.celestial-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+}
+
+.celestial-input:focus {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+}
+
+.celestial-input::placeholder {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.celestial-auth-btn {
+  background: linear-gradient(90deg, #1D7BFF 0%, #5832D8 100%);
+  box-shadow: 0 4px 20px rgba(88, 50, 216, 0.3);
+}
+
+.celestial-auth-btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.celestial-auth-btn:active {
+  transform: translateY(0);
+}
+
+.celestial-error-box {
+  background: rgba(255, 99, 132, 0.1);
+  border: 1px solid rgba(255, 99, 132, 0.15);
+}
+
+.celestial-checkbox {
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.celestial-checkbox:checked {
+  background: #5832D8;
+  border-color: #5832D8;
+}
+
+.celestial-checkbox:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.py-4\.5 {
+  padding-top: 1.125rem;
+  padding-bottom: 1.125rem;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+}

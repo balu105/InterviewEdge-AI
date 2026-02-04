@@ -1,0 +1,70 @@
+:root {
+  /* Precise Celestial Dark Palette - Extracted from Reference */
+  --bg-midnight: #050110;
+  --bg-deep-space: #080218;
+  --text-primary: #FFFFFF;
+  --text-dim: #94A3B8;
+  --text-muted: #64748B;
+  
+  --color-purple: #5832D8;
+  --color-blue: #1D7BFF;
+  --color-orange: #FF9B42;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--bg-midnight);
+  color: var(--text-primary);
+  margin: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.innovation-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  /* Replicating the exact top-down radial indigo depth */
+  background: radial-gradient(circle at 50% -10%, #1A1340 0%, #050110 50%);
+}
+
+.glow-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.glow-1 { width: 900px; height: 900px; background: #4F46E5; top: -10%; right: -5%; }
+.glow-2 { width: 700px; height: 700px; background: #1D7BFF; bottom: -10%; left: -10%; }
+
+.animate-fadeIn {
+  animation: fadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Precise Button Gradients */
+.btn-celestial-purple {
+  background: linear-gradient(135deg, #5832D8, #3b1f91);
+  color: white;
+  box-shadow: 0 4px 20px rgba(88, 50, 216, 0.25);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-celestial-blue {
+  background: linear-gradient(135deg, #1D7BFF, #1557B6);
+  color: white;
+  box-shadow: 0 4px 20px rgba(29, 123, 255, 0.25);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-celestial-purple:hover, .btn-celestial-blue:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.05);
+}

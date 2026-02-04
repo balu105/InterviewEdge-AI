@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { User } from '../types';
 import { supabase } from '../services/supabaseClient';
 import { checkPortalAdminStatus } from '../services/databaseService';
+import './AuthPage.css';
 
 interface AuthProps {
   onSuccess: (user: User) => void;
@@ -16,13 +16,11 @@ export const AuthPage: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
-    setStatusMsg(isLogin ? "Signing you in..." : "Creating your profile...");
     
     try {
       if (isLogin) {
@@ -33,24 +31,20 @@ export const AuthPage: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
         if (error) throw error;
         
         if (data.user) {
-          // ISOLATION SECURITY CHECK:
-          // Check if this ID exists in the Placement Admin table.
           const isAdmin = await checkPortalAdminStatus(data.user.id);
-          
           if (isAdmin) {
-            // Force sign out because this is a Director account trying to enter Student Hub
             await supabase.auth.signOut();
-            throw new Error("ACCESS DENIED: This is a Placement Director account. Please log in via the Institutional Placement Portal instead.");
+            throw new Error("Placement Director console access restricted.");
           }
 
           onSuccess({
-            name: data.user.user_metadata?.display_name || data.user.email?.split('@')[0] || "Candidate",
+            name: data.user.user_metadata?.display_name || data.user.email?.split('@')[0] || "User",
             email: data.user.email || "",
             joinedDate: new Date(data.user.created_at).toLocaleDateString()
           });
         }
       } else {
-        if (!name) throw new Error("Full name is required to create an account.");
+        if (!name) throw new Error("Full name required.");
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -64,53 +58,47 @@ export const AuthPage: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
             joinedDate: new Date(data.user.created_at).toLocaleDateString()
           });
         } else {
-          setStatusMsg("Verification email sent. Please check your inbox.");
+          setErrorMsg("Verification required. Please check your inbox.");
         }
       }
     } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred during authentication.");
-      setStatusMsg(null);
+      setErrorMsg(err.message || "Authentication protocols failed.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-start px-4 sm:px-6 pt-6 sm:pt-12 animate-fadeIn">
-      {/* Back Button */}
-      <button 
-        onClick={onBack}
-        className="mb-8 flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] hover:text-indigo-600 transition-all active:scale-95 group"
-      >
-        <i className="fas fa-arrow-left text-[8px] group-hover:-translate-x-1 transition-transform"></i> 
-        Back to Home
-      </button>
-
-      {/* Main Authentication Card */}
-      <div className="w-full max-w-[440px] glass-card p-8 sm:p-12 rounded-[2.5rem] sm:rounded-[3rem] relative overflow-hidden shadow-2xl border border-white/80">
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-600 via-sky-400 to-indigo-500"></div>
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 animate-fadeIn relative z-10 overflow-hidden">
+      
+      <div className="w-full max-w-[440px] celestial-auth-card p-10 md:p-12 relative">
         
-        <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 mx-auto mb-6 shadow-sm">
-            <i className={`fas ${isLogin ? 'fa-user' : 'fa-user-plus'} text-2xl`}></i>
+        {/* Brand Logo Box */}
+        <div className="flex justify-center mb-8">
+          <div className="w-16 h-16 bg-[#5832D8] rounded-[1.25rem] flex items-center justify-center text-white text-3xl font-black shadow-[0_0_20px_rgba(88,50,216,0.4)]">
+            H
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tighter mb-2">
-            {isLogin ? 'Student Login' : 'Student Signup'}
-          </h1>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-            {isLogin ? 'HireAI Student Infrastructure' : 'Join the candidate pool'}
+        </div>
+
+        {/* Header Text */}
+        <div className="text-center space-y-3 mb-12">
+          <h2 className="text-3xl font-black text-white tracking-tight">
+            {isLogin ? 'Welcome back' : 'Create your account'}
+          </h2>
+          <p className="text-slate-500 font-medium text-sm">
+            {isLogin ? 'Log in to your account' : 'Sign up to get started'}
           </p>
         </div>
 
-        <form onSubmit={handleAuth} className="space-y-6">
+        <form className="space-y-6" onSubmit={handleAuth}>
           {!isLogin && (
-            <div className="space-y-2 animate-fadeInDown">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Full Name</label>
               <input
                 type="text"
-                placeholder="Alex Johnson"
                 required={!isLogin}
-                className="w-full px-6 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:border-indigo-600 outline-none text-slate-900 transition-all text-sm placeholder:text-slate-300 shadow-sm"
+                className="celestial-input w-full px-5 py-4 outline-none transition-all text-sm font-medium text-white"
+                placeholder="yourname@example.com"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -118,64 +106,85 @@ export const AuthPage: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
           )}
 
           <div className="space-y-2">
-            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Email</label>
             <input
               type="email"
-              placeholder="alex@example.com"
               required
-              className="w-full px-6 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:border-indigo-600 outline-none text-slate-900 transition-all text-sm placeholder:text-slate-300 shadow-sm"
+              className="celestial-input w-full px-5 py-4 outline-none transition-all text-sm font-medium text-white"
+              placeholder="yourname@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Password</label>
             <input
               type="password"
-              placeholder="••••••••"
               required
-              className="w-full px-6 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:border-indigo-600 outline-none text-slate-900 transition-all text-sm placeholder:text-slate-300 shadow-sm"
+              className="celestial-input w-full px-5 py-4 outline-none transition-all text-sm font-medium text-white"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
-          {statusMsg && (
-            <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 animate-pulse">
-              <p className="text-indigo-600 text-[9px] font-black uppercase text-center tracking-widest">{statusMsg}</p>
-            </div>
-          )}
-          
           {errorMsg && (
-            <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100 animate-shake">
-              <p className="text-rose-500 text-[9px] font-black uppercase text-center tracking-widest">{errorMsg}</p>
+            <div className="celestial-error-box p-4 rounded-xl flex items-center justify-center gap-3 animate-shake">
+              <div className="w-4 h-4 rounded-full bg-orange-600 flex items-center justify-center text-[8px]">
+                <i className="fas fa-check"></i>
+              </div>
+              <span className="text-[11px] font-medium text-white opacity-80">{errorMsg}</span>
             </div>
           )}
 
-          <div className="flex flex-col gap-4 pt-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-crystal w-full py-5 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] transition-all disabled:opacity-50 active:scale-[0.98] shadow-lg"
-            >
-              {loading ? <i className="fas fa-spinner fa-spin mr-2"></i> : null}
-              {isLogin ? 'Authorize Student' : 'Create Profile'}
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => { setIsLogin(!isLogin); setErrorMsg(null); setStatusMsg(null); }}
-              className="w-full bg-slate-50 border border-slate-200 text-slate-500 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:text-indigo-600 hover:border-indigo-100 transition-all"
-            >
-              {isLogin ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
-            </button>
-          </div>
+          {!isLogin && (
+            <div className="flex items-center gap-3 py-2">
+              <input type="checkbox" className="celestial-checkbox" id="terms" required />
+              <label htmlFor="terms" className="text-xs text-slate-400 font-medium cursor-pointer">
+                I agree to the <span className="text-orange-500">Terms & Conditions</span>
+              </label>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="celestial-auth-btn w-full py-4.5 rounded-2xl font-bold text-sm tracking-wide text-white uppercase transition-all shadow-xl disabled:opacity-50"
+          >
+            {loading ? <i className="fas fa-circle-notch fa-spin"></i> : (isLogin ? 'Login' : 'Sign up')}
+          </button>
         </form>
 
-        <p className="mt-10 text-center text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-          End-to-end encrypted connection
-        </p>
+        <div className="mt-12 text-center space-y-6">
+          {isLogin ? (
+            <button className="text-sm font-medium text-[#1D7BFF] hover:underline underline-offset-4 opacity-90">
+              Forgot password?
+            </button>
+          ) : null}
+          
+          <div className="pt-2 border-t border-white/5">
+            <p className="text-xs text-slate-500 font-medium">
+              {isLogin ? "Don't have an account?" : "Already have an account?"}
+              <button 
+                onClick={() => { setIsLogin(!isLogin); setErrorMsg(null); }}
+                className="ml-2 text-[#1D7BFF] font-bold hover:underline underline-offset-4"
+              >
+                {isLogin ? 'Sign up' : 'Login'}
+              </button>
+            </p>
+          </div>
+        </div>
+
+        {/* Subtle Back Link */}
+        <div className="mt-8 text-center">
+           <button 
+             onClick={onBack}
+             className="text-[10px] font-black text-slate-600 hover:text-slate-400 uppercase tracking-widest transition-all"
+           >
+             Return to Matrix
+           </button>
+        </div>
       </div>
     </div>
   );

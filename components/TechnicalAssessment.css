@@ -1,0 +1,75 @@
+.forge-light-theme {
+  background: radial-gradient(circle at 10% 10%, #f7f9fc 0%, #edf2f7 100%);
+  position: relative;
+  z-index: 1;
+}
+
+.forge-light-theme::before {
+  content: "";
+  position: absolute;
+  top: -10%;
+  left: 20%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(14, 165, 164, 0.05) 0%, transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.forge-glass-card {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(40px) !important;
+  -webkit-backdrop-filter: blur(40px) !important;
+  border: 1px solid #FFFFFF !important;
+  box-shadow: 
+    0 20px 60px -10px rgba(0, 0, 0, 0.03),
+    0 0 1px 1px rgba(255, 255, 255, 0.8) inset !important;
+}
+
+.forge-editor-light {
+  caret-color: #0EA5A4;
+  color: #1E293B;
+  background-color: transparent;
+}
+
+.forge-editor-light::placeholder {
+  color: #CBD5E1;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+.custom-scrollbar-light::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+@keyframes scanGlowLight {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 0.03; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+.forge-editor-light::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, rgba(14, 165, 164, 0.05), transparent);
+  animation: scanGlowLight 4s linear infinite;
+  pointer-events: none;
+}
+
+@media (max-width: 1024px) {
+  .forge-light-theme h1 {
+    font-size: 1.25rem !important;
+  }
+}

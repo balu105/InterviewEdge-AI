@@ -1,0 +1,24 @@
+.nav-tab-active {
+  background: #EEF2FF !important;
+  color: #5832D8 !important;
+  box-shadow: 0 4px 12px rgba(88, 50, 216, 0.08) !important;
+}
+
+.nav-tab-active i {
+  color: #5832D8 !important;
+}
+
+/* Smooth transition for navigation text */
+nav button span {
+  transition: color 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+  nav {
+    display: none !important;
+  }
+  
+  .grid-cols-3 {
+    grid-template-cols: 1fr 1fr;
+  }
+}

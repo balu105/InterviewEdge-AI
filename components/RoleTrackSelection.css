@@ -1,0 +1,44 @@
+.track-theme-container {
+  /* Soft light blue/white gradient background with glows to match Hub dashboard */
+  background: radial-gradient(circle at 10% 10%, #f7f9fc 0%, #edf2f7 100%);
+  position: relative;
+  z-index: 1;
+}
+
+.track-theme-container::before {
+  content: "";
+  position: absolute;
+  top: -10%;
+  right: 10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.04) 0%, transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.track-card {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: 
+    0 20px 40px -10px rgba(0, 0, 0, 0.02),
+    0 0 1px 1px rgba(255, 255, 255, 0.9) inset !important;
+}
+
+/* Specific icon adjustments for visual parity with the reference */
+.track-card .fa-mug-hot { margin-top: -2px; }
+.track-card .fa-microchip { transform: scale(1.1); }
+.track-card .fa-chart-line { margin-left: 2px; }
+.track-card .fa-cubes { transform: scale(1.05); }
+
+@media (max-width: 640px) {
+  .track-card {
+    padding: 2.5rem !important;
+    border-radius: 2rem !important;
+  }
+  
+  .track-theme-container h1 {
+    font-size: 2.5rem !important;
+  }
+}

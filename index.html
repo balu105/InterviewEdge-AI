@@ -1,169 +1,35 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HireAI | Celestial Enterprise Suite</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>HireAI | Innovation Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-      :root {
-        --bg-base: #fcfdfe;
-        --accent-indigo: #6366f1;
-        --accent-sky: #0ea5e9;
-        --accent-rose: #f472b6;
-        --text-main: #0f172a;
-        --glass-bg: rgba(255, 255, 255, 0.65);
-        --glass-border: rgba(255, 255, 255, 0.8);
+    <link rel="stylesheet" href="/global.css" />
+    <script type="importmap">
+    {
+      "imports": {
+        "recharts": "https://esm.sh/recharts@^3.7.0",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+        "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
+        "react/": "https://esm.sh/react@^19.2.4/",
+        "react": "https://esm.sh/react@^19.2.4",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.93.3",
+        "vite": "https://esm.sh/vite@^7.3.1",
+        "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.3"
       }
-
-      body {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        background-color: var(--bg-base);
-        color: var(--text-main);
-        margin: 0;
-        overflow-x: hidden;
-      }
-
-      .aurora-bg {
-        position: fixed;
-        inset: 0;
-        z-index: -3;
-        background: var(--bg-base);
-        overflow: hidden;
-      }
-
-      .blob {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(100px);
-        opacity: 0.12;
-        animation: drift 25s infinite alternate ease-in-out;
-      }
-
-      .blob-1 {
-        width: 800px;
-        height: 800px;
-        background: var(--accent-indigo);
-        top: 20%;
-        left: -20%;
-      }
-
-      .blob-2 {
-        width: 600px;
-        height: 600px;
-        background: var(--accent-sky);
-        bottom: 10%;
-        right: -5%;
-        animation-duration: 30s;
-        animation-delay: -5s;
-      }
-
-      .blob-3 {
-        width: 500px;
-        height: 500px;
-        background: var(--accent-rose);
-        top: 60%;
-        left: 30%;
-        animation-duration: 20s;
-        animation-delay: -10s;
-      }
-
-      @keyframes drift {
-        0% { transform: translate(0, 0) scale(1); }
-        33% { transform: translate(100px, 50px) scale(1.1); }
-        66% { transform: translate(-50px, 150px) scale(0.9); }
-        100% { transform: translate(50px, -50px) scale(1); }
-      }
-
-      .precision-grid {
-        position: fixed;
-        inset: 0;
-        z-index: -2;
-        background-image: 
-          linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
-        background-size: 60px 60px;
-      }
-
-      .precision-grid::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-        background-size: 20px 20px;
-      }
-
-      .noise-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: -1;
-        opacity: 0.015;
-        pointer-events: none;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-      }
-
-      .glass-card {
-        background: var(--glass-bg);
-        backdrop-filter: blur(25px) saturate(180%);
-        border: 1px solid var(--glass-border);
-        box-shadow: 
-          0 10px 40px -10px rgba(0, 0, 0, 0.03),
-          0 20px 25px -5px rgba(0, 0, 0, 0.02),
-          inset 0 0 0 1px var(--glass-border);
-      }
-
-      .glass-card:hover {
-        background: rgba(255, 255, 255, 0.75);
-        border-color: rgba(255, 255, 255, 1);
-        transform: translateY(-2px);
-        box-shadow: 0 30px 60px -12px rgba(99, 102, 241, 0.08);
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      .btn-crystal {
-        background: linear-gradient(135deg, var(--accent-indigo), var(--accent-sky));
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: 0 8px 20px -6px rgba(99, 102, 241, 0.3);
-      }
-
-      .btn-crystal:hover {
-        filter: brightness(1.05);
-        box-shadow: 0 15px 30px -8px rgba(99, 102, 241, 0.4);
-      }
-
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.08); border-radius: 10px; }
-      ::-webkit-scrollbar-thumb:hover { background: var(--accent-indigo); }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
-    "recharts": "https://esm.sh/recharts@^3.6.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0",
-    "vite": "https://esm.sh/vite@^7.3.0",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
-  }
-}
-</script>
-</head>
-  <body class="antialiased">
-    <div class="aurora-bg">
-      <div class="blob blob-1"></div>
-      <div class="blob blob-2"></div>
-      <div class="blob blob-3"></div>
+    }
+    </script>
+  </head>
+  <body>
+    <div class="innovation-bg">
+      <div class="glow-blob glow-1"></div>
+      <div class="glow-blob glow-2"></div>
+      <div class="glow-blob glow-3"></div>
     </div>
-    <div class="precision-grid"></div>
-    <div class="noise-overlay"></div>
     <div id="root"></div>
-    <!-- Entry point script is required for the React app to mount -->
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

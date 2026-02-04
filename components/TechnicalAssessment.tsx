@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { generateCodingRound, evaluateCodeSubmission } from '../services/geminiService';
 import { CodingChallenge } from '../types';
+import './TechnicalAssessment.css';
 
 interface TechnicalAssessmentProps {
   targetRole: string;
@@ -12,21 +12,27 @@ export const TechnicalAssessment: React.FC<TechnicalAssessmentProps> = ({ target
   const [challenges, setChallenges] = useState<CodingChallenge[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [submissions, setSubmissions] = useState<Record<string, string>>({});
-  const [results, setResults] = useState<Record<string, boolean>>({});
+  const [results, setResults] = useState<Record<string, { isCorrect: boolean; feedback: string } | null>>({});
   const [loading, setLoading] = useState(true);
-  const [evaluating, setEvaluating] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [tabSwitches, setTabSwitches] = useState(0);
+  const [consoleLog, setConsoleLog] = useState<string>("> Innovation Forge v4.0 Active...");
 
   useEffect(() => {
     const init = async () => {
       try {
         const data = await generateCodingRound(targetRole);
-        setChallenges(data);
+        const finalChallenges = data.slice(0, 3);
+        setChallenges(finalChallenges);
+        
         const initialSubmissions: Record<string, string> = {};
-        data.forEach(c => initialSubmissions[c.id] = c.boilerplate || "");
+        finalChallenges.forEach(c => {
+          initialSubmissions[c.id] = c.boilerplate || "";
+        });
         setSubmissions(initialSubmissions);
       } catch (err) {
-        console.error("Assessment Init Error:", err);
+        setConsoleLog("> Error: Failed to connect to Neural Registry.");
       } finally {
         setLoading(false);
       }
@@ -41,119 +47,148 @@ export const TechnicalAssessment: React.FC<TechnicalAssessmentProps> = ({ target
   }, [targetRole]);
 
   const handleCodeChange = (val: string) => {
+    if (isSubmitting) return;
     setSubmissions(prev => ({ ...prev, [challenges[currentIdx].id]: val }));
   };
 
-  const submitSolution = async () => {
-    setEvaluating(true);
+  const runCode = async () => {
+    if (isRunning || isSubmitting) return;
+    setIsRunning(true);
+    setConsoleLog(`> Testing module logic: ${challenges[currentIdx].title}...`);
     try {
-      const challenge = challenges[currentIdx];
-      const code = submissions[challenge.id];
-      const evaluation = await evaluateCodeSubmission(challenge, code);
-      
-      const newResults = { ...results, [challenge.id]: evaluation.isCorrect };
-      setResults(newResults);
-      
-      if (currentIdx < challenges.length - 1) {
-        setCurrentIdx(prev => prev + 1);
-      } else {
-        const correctCount = Object.values(newResults).filter(Boolean).length;
-        const finalScore = Math.round((correctCount / challenges.length) * 100);
-        onComplete(finalScore, tabSwitches > 0, challenges, submissions);
-      }
+      const evaluation = await evaluateCodeSubmission(challenges[currentIdx], submissions[challenges[currentIdx].id]);
+      setConsoleLog(`> Result: ${evaluation.isCorrect ? 'SUCCESS' : 'FAILED'}\n> Analysis: ${evaluation.feedback}`);
     } catch (err) {
-      alert("Submission channel interrupted. Retrying...");
-    } finally {
-      setEvaluating(false);
-    }
+      setConsoleLog("> Runtime Interrupted.");
+    } finally { setIsRunning(false); }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 md:py-32">
-        <div className="relative w-16 h-16 md:w-20 md:h-20 mb-8">
-          <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
-          <div className="absolute inset-0 border-t-4 border-indigo-600 rounded-full animate-spin"></div>
-        </div>
-        <h2 className="text-lg md:text-xl font-black text-slate-800 uppercase tracking-widest animate-pulse px-4 text-center">Constructing Challenges</h2>
-        <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-4 italic">Role: {targetRole}</p>
-      </div>
-    );
-  }
+  const submitChallenge = async () => {
+    if (isSubmitting || isRunning) return;
+    setIsSubmitting(true);
+    setConsoleLog(`> Committing module 0${currentIdx + 1}...`);
+    try {
+      const evaluation = await evaluateCodeSubmission(challenges[currentIdx], submissions[challenges[currentIdx].id]);
+      const newResults = { ...results, [challenges[currentIdx].id]: evaluation };
+      setResults(newResults);
+      if (currentIdx < challenges.length - 1) {
+        setTimeout(() => { setCurrentIdx(prev => prev + 1); setIsSubmitting(false); }, 800);
+      } else {
+        const correctCount = Object.values(newResults).filter((r: any) => r?.isCorrect).length;
+        onComplete(Math.round((correctCount / challenges.length) * 100), tabSwitches > 0, challenges, submissions);
+      }
+    } catch (err) { setIsSubmitting(false); }
+  };
 
-  const currentQ = challenges[currentIdx];
+  if (loading) return (
+    <div className="forge-light-theme fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white/80 backdrop-blur-md">
+      <div className="w-12 h-12 border-4 border-[#0EA5A4]/20 border-t-[#0EA5A4] rounded-full animate-spin"></div>
+      <p className="mt-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Initializing Innovation Forge</p>
+    </div>
+  );
+
+  const cur = challenges[currentIdx];
   const isCheating = tabSwitches > 0;
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-4 md:py-8 flex flex-col gap-6 md:gap-8 animate-fadeIn">
-      {/* Header Info */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 shadow-xl gap-4">
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2 md:gap-3">
-            <span className="text-[9px] md:text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">Module {currentIdx + 1} / 3</span>
-            <span className="hidden sm:block w-1.5 h-1.5 bg-slate-200 rounded-full"></span>
-            <span className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{currentQ.topic}</span>
-          </div>
-          <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">{currentQ.title}</h1>
-        </div>
-        <div className="flex gap-4 w-full md:w-auto">
-          <div className={`px-4 md:px-6 py-2 md:py-3 rounded-2xl border transition-all flex items-center gap-3 flex-1 md:flex-none justify-center ${isCheating ? 'bg-rose-50 border-rose-100' : 'bg-indigo-50 border-indigo-100'}`}>
-            <div className={`w-2 h-2 rounded-full ${isCheating ? 'bg-rose-500 animate-ping' : 'bg-indigo-500'}`}></div>
-            <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${isCheating ? 'text-rose-600' : 'text-indigo-600'}`}>
-              {isCheating ? `INTEGRITY (${tabSwitches})` : 'SECURE'}
-            </span>
-          </div>
-        </div>
-      </div>
-      
-      {/* Layout Grid */}
-      <div className="flex flex-col lg:flex-row gap-6 md:gap-8 min-h-[400px] lg:h-[650px]">
-        {/* Specification Panel */}
-        <div className="lg:w-1/2 bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 p-8 md:p-10 overflow-y-auto custom-scrollbar flex flex-col shadow-lg">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Specification Set</h3>
-          <p className="text-slate-700 font-medium leading-relaxed mb-8 text-base md:text-lg">{currentQ.problemStatement}</p>
-          <div className="space-y-6">
-            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200">
-              <div className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-3">Constraints</div>
-              <ul className="space-y-2 text-sm text-slate-600 font-medium">
-                {currentQ.constraints?.map((c, i) => <li key={i} className="flex gap-3"><span className="text-indigo-300 shrink-0">•</span> <span className="text-xs md:text-sm">{c}</span></li>)}
-              </ul>
+    <div className="forge-light-theme min-h-screen">
+      <div className="max-w-[1500px] mx-auto px-8 pt-4 pb-20 flex flex-col gap-6 animate-fadeIn">
+        
+        {/* Sub-Header Module Selector */}
+        <div className="flex flex-col md:flex-row items-center justify-between forge-glass-card p-6 rounded-[2.5rem] border border-white">
+          <div className="flex items-center gap-8">
+            <div className="flex gap-3">
+              {challenges.map((c, i) => (
+                <button 
+                  key={c.id} 
+                  onClick={() => setCurrentIdx(i)}
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center text-xs font-black transition-all border ${
+                    currentIdx === i 
+                      ? 'bg-[#0EA5A4] border-[#0EA5A4] text-white shadow-[0_4px_12px_rgba(14,165,164,0.3)]' 
+                      : results[c.id]?.isCorrect 
+                        ? 'bg-emerald-50 border-emerald-100 text-emerald-500' 
+                        : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100'
+                  }`}
+                >
+                  0{i + 1}
+                </button>
+              ))}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-               <div className="p-5 md:p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Input</div>
-                  <code className="text-[11px] md:text-xs text-indigo-600 font-mono-tech font-bold break-all">{currentQ.exampleInput}</code>
-               </div>
-               <div className="p-5 md:p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Output</div>
-                  <code className="text-[11px] md:text-xs text-emerald-600 font-mono-tech font-bold break-all">{currentQ.exampleOutput}</code>
-               </div>
+            <div>
+              <h1 className="text-lg font-black text-slate-800 tracking-tight">{cur.title}</h1>
+              <p className="text-[9px] font-black text-[#0EA5A4] uppercase tracking-widest">{cur.topic}</p>
             </div>
+          </div>
+          <div className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border flex items-center gap-2 ${isCheating ? 'bg-rose-50 border-rose-100 text-rose-500' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+            <i className={`fas ${isCheating ? 'fa-triangle-exclamation' : 'fa-shield-halved'}`}></i>
+            {isCheating ? 'Integrity Breach' : 'Performance Secure'}
           </div>
         </div>
 
-        {/* Editor Panel */}
-        <div className="lg:w-1/2 bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 flex flex-col overflow-hidden relative shadow-xl min-h-[400px]">
-           <textarea
-             className="w-full flex-1 p-6 md:p-8 bg-slate-50 outline-none text-slate-800 font-mono-tech text-[12px] md:text-sm leading-relaxed resize-none shadow-inner"
-             spellCheck={false}
-             value={submissions[currentQ.id]}
-             onChange={(e) => handleCodeChange(e.target.value)}
-             placeholder="// Implement solution logic here..."
-           />
-           <div className="p-6 md:p-8 bg-white border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-             <div className="flex items-center gap-2">
-               <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
-               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Real-time Sync Active</span>
-             </div>
-             <button 
-               onClick={submitSolution} 
-               disabled={evaluating} 
-               className="w-full sm:w-auto px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] transition-all hover:bg-indigo-700 shadow-xl shadow-indigo-100"
-             >
-               {evaluating ? 'Evaluating...' : (currentIdx === 2 ? 'Finalize Forge' : 'Next Module')}
-             </button>
-           </div>
+        <div className="flex flex-col lg:flex-row gap-8 h-[720px]">
+          {/* Left Sidebar: Problem Constraints */}
+          <div className="lg:w-[32%] space-y-6 flex flex-col">
+            <div className="flex-1 forge-glass-card p-10 rounded-[3rem] border border-white overflow-y-auto custom-scrollbar-light">
+              <div className="space-y-10">
+                <section className="space-y-4">
+                  <h3 className="text-[10px] font-black text-[#0EA5A4] uppercase tracking-widest">Logic Constraint</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed font-semibold opacity-90">{cur.problemStatement}</p>
+                </section>
+                
+                <section className="space-y-6">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vector Samples</h3>
+                  <div className="p-8 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-6">
+                    <div>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-2">Input</p>
+                      <code className="text-[13px] text-[#0EA5A4] font-mono font-bold">{cur.exampleInput}</code>
+                    </div>
+                    <div>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-2">Output</p>
+                      <code className="text-[13px] text-emerald-600 font-mono font-bold">{cur.exampleOutput}</code>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content: Editor & Console */}
+          <div className="flex-1 flex flex-col gap-6">
+            {/* Code Editor Panel */}
+            <div className="flex-1 forge-glass-card rounded-[3rem] border border-white overflow-hidden flex flex-col shadow-xl shadow-slate-200/50">
+              <div className="bg-white/60 px-10 py-5 border-b border-slate-100 flex justify-between items-center">
+                <span className="text-[10px] font-black text-[#0EA5A4] uppercase tracking-[0.2em] italic">neural_forge.py</span>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={runCode} 
+                    disabled={isRunning} 
+                    className="px-8 py-2.5 bg-white border border-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-[#0EA5A4] hover:text-[#0EA5A4] transition-all"
+                  >
+                    Test Run
+                  </button>
+                  <button 
+                    onClick={submitChallenge} 
+                    disabled={isSubmitting} 
+                    className="px-10 py-2.5 bg-[#0EA5A4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#0EA5A4]/20 hover:scale-[1.02] transition-transform"
+                  >
+                    Commit
+                  </button>
+                </div>
+              </div>
+              <textarea
+                className="flex-1 w-full p-12 outline-none text-slate-700 font-mono text-sm leading-[1.8] resize-none bg-white/40 forge-editor-light"
+                spellCheck={false}
+                value={submissions[cur.id] || ""}
+                onChange={(e) => handleCodeChange(e.target.value)}
+                placeholder="// Initialize neural logic..."
+              />
+            </div>
+            
+            {/* Terminal Panel */}
+            <div className="h-48 forge-glass-card p-8 rounded-[2.5rem] border border-white overflow-y-auto custom-scrollbar-light bg-white/40">
+              <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-slate-500 font-bold opacity-80">{consoleLog}</pre>
+            </div>
+          </div>
         </div>
       </div>
     </div>

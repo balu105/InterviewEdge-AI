@@ -1,5 +1,6 @@
 
 import React, { useState, useRef } from 'react';
+import './ResumeBenchmarking.css';
 
 interface ResumeBenchmarkingProps {
   onUpload: (text: string) => void;
@@ -24,12 +25,14 @@ export const ResumeBenchmarking: React.FC<ResumeBenchmarkingProps> = ({ onUpload
 
     const reader = new FileReader();
     reader.onload = async (e) => {
+      // Simulate neural parsing delay for UX
       setTimeout(() => setIsParsing(false), 1500);
     };
 
     if (selectedFile.type.includes('text/plain') || selectedFile.name.endsWith('.txt')) {
       reader.readAsText(selectedFile);
     } else {
+      // PDF handling would go here, for now just simulating
       setTimeout(() => setIsParsing(false), 2000);
     }
   };
@@ -48,91 +51,102 @@ export const ResumeBenchmarking: React.FC<ResumeBenchmarkingProps> = ({ onUpload
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 animate-fadeIn">
-      <div className="glass-card p-12 md:p-20 rounded-[4rem] relative overflow-hidden">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-16">
-          <div className="text-center md:text-left space-y-2">
-            <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Neural Scan</h2>
-            <div className="flex items-center justify-center md:justify-start gap-3">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gating Threshold: 70% Affinity</p>
-            </div>
-          </div>
-          {file && (
-            <button 
-              onClick={() => { setFile(null); setError(null); }}
-              className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:text-rose-600 transition-colors"
-            >
-              Flush Buffer
-            </button>
-          )}
-        </div>
-
+    <div className="resume-theme-container min-h-screen">
+      <div className="max-w-6xl mx-auto px-6 py-20 flex flex-col items-center justify-center animate-fadeIn">
+        
+        {/* Main Glass Dropzone Card */}
         <div 
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`relative group cursor-pointer w-full h-[400px] rounded-[3.5rem] border-2 border-dashed transition-all duration-700 flex flex-col items-center justify-center overflow-hidden
-            ${isDragging ? 'border-indigo-500 bg-indigo-50/50 scale-[0.98]' : 'border-slate-200 bg-white/30 hover:bg-white/60'}
-            ${file ? 'border-emerald-300 bg-emerald-50/20' : ''}
+          onClick={() => !file && fileInputRef.current?.click()}
+          className={`relative resume-glass-card w-full max-w-4xl min-h-[520px] rounded-[4rem] p-12 md:p-20 flex flex-col items-center justify-center text-center transition-all duration-700 cursor-pointer overflow-hidden
+            ${isDragging ? 'scale-[0.98] border-[#6366F1]/30 bg-indigo-50/20' : ''}
+            ${file ? 'cursor-default' : 'hover:bg-white/40'}
           `}
         >
           <input type="file" ref={fileInputRef} onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} className="hidden" accept=".pdf,.txt" />
 
-          {isParsing && (
-            <div className="absolute inset-0 z-20 pointer-events-none">
-              <div className="w-full h-1 bg-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.5)] animate-scanLine"></div>
+          {/* Stardust / Cloud Glow Internal Decorations */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none opacity-40">
+             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-200/20 blur-[120px] rounded-full"></div>
+             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-200/20 blur-[120px] rounded-full"></div>
+          </div>
+
+          <div className="relative z-10 space-y-12 w-full max-w-lg mx-auto">
+            {/* Centered Icon Box */}
+            <div className="flex justify-center">
+              <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center text-3xl shadow-[0_15px_30px_rgba(88,50,216,0.1)] transition-all duration-500 border ${
+                file ? 'bg-emerald-50 border-emerald-100 text-emerald-500' : 'bg-[#EEF2FF] border-[#6366F1]/10 text-[#5832D8]'
+              }`}>
+                <i className={`fas ${file ? 'fa-check-double' : 'fa-file-pdf'} ${isParsing ? 'animate-pulse' : ''}`}></i>
+              </div>
+            </div>
+
+            {/* Typography Section */}
+            <div className="space-y-6">
+              <h2 className="text-4xl md:text-5xl font-black text-[#1E293B] tracking-tighter">
+                {file ? (isParsing ? 'Scanning Vectors...' : 'Calibration Ready') : 'Drop Resume Artifact'}
+              </h2>
+              <p className="text-slate-500 font-medium text-sm md:text-base leading-relaxed opacity-80">
+                {file 
+                  ? `Artifact "${file.name}" initialized and ready for deep vector analysis.` 
+                  : 'Upload your profile in PDF or TXT for deep vector analysis.'}
+              </p>
+            </div>
+
+            {/* Action Buttons / Progress */}
+            <div className="pt-4">
+              {file ? (
+                <div className="flex flex-col gap-6 animate-fadeIn">
+                  <button 
+                    onClick={triggerAnalysis}
+                    disabled={isParsing}
+                    className="w-full py-5 rounded-2xl bg-gradient-to-r from-[#1D7BFF] to-[#5832D8] text-white text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-indigo-200/50 hover:scale-[1.02] transition-transform disabled:opacity-50"
+                  >
+                    {isParsing ? 'Initializing Parser...' : 'Initiate Deployment Analysis'}
+                  </button>
+                  <button 
+                    onClick={() => { setFile(null); setError(null); }}
+                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-500 transition-colors"
+                  >
+                    Flush Buffer and Rescan
+                  </button>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-2 px-6 py-2 bg-[#F8FAFC] rounded-full border border-slate-200/50 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  <i className="fas fa-shield-halved text-[#5832D8]/40"></i>
+                  Encrypted Transfer Protocol
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Error Message Box */}
+          {error && (
+            <div className="absolute bottom-10 left-10 right-10 p-5 bg-rose-50 border border-rose-100 rounded-3xl flex items-center gap-4 animate-shake z-20">
+              <div className="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center text-xs">
+                <i className="fas fa-exclamation"></i>
+              </div>
+              <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">{error}</p>
             </div>
           )}
 
-          <div className="text-center space-y-6 px-10">
-            {!file ? (
-              <>
-                <div className="w-20 h-20 bg-indigo-50 rounded-[1.5rem] flex items-center justify-center border border-indigo-100 mx-auto group-hover:scale-110 transition-transform">
-                  <i className="fas fa-file-upload text-3xl text-indigo-600"></i>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Drop Resume Artifact</h3>
-                  <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">
-                    Upload your profile in <span className="text-indigo-600">PDF</span> or <span className="text-indigo-600">TXT</span> for deep vector analysis.
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="animate-fadeIn space-y-6">
-                <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto border-2 ${isParsing ? 'bg-indigo-50 border-indigo-200 animate-pulse' : 'bg-emerald-50 border-emerald-200'}`}>
-                  <i className={`fas ${isParsing ? 'fa-spinner fa-spin text-indigo-600' : 'fa-check-double text-emerald-500'} text-4xl`}></i>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                    {isParsing ? 'Scanning Vectors...' : 'Calibration Active'}
-                  </h3>
-                  <div className="px-5 py-2 bg-white rounded-full border border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest inline-block">
-                    {file.name} — {(file.size / 1024).toFixed(1)} KB
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Parsing Scan-Line Animation */}
+          {isParsing && (
+            <div className="absolute inset-0 pointer-events-none z-0">
+               <div className="w-full h-1 bg-gradient-to-r from-transparent via-[#5832D8]/20 to-transparent shadow-[0_0_40px_rgba(88,50,216,0.3)] animate-scanLine absolute top-0"></div>
+            </div>
+          )}
         </div>
 
-        {error && (
-          <div className="mt-8 p-5 bg-rose-50 border border-rose-100 rounded-3xl flex items-center gap-4 animate-shake">
-            <i className="fas fa-exclamation-triangle text-rose-500"></i>
-            <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">{error}</p>
-          </div>
-        )}
-
-        <div className="mt-16">
-          <button 
-            onClick={triggerAnalysis}
-            disabled={!file || isParsing}
-            className="btn-crystal w-full py-6 text-white rounded-[2.5rem] font-black text-xs uppercase tracking-[0.4em] disabled:opacity-30"
-          >
-            {isParsing ? 'Processing Payload...' : 'Initiate Deep Audit'}
-          </button>
+        {/* Support Label */}
+        <div className="mt-12 text-center">
+           <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em] opacity-50">
+             HireAI Neural Infrastructure v4.2.0 • Data Sovereignty Verified
+           </p>
         </div>
+
       </div>
     </div>
   );

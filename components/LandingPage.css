@@ -1,0 +1,40 @@
+.hero-title {
+  font-size: clamp(2.8rem, 7.5vw, 5.8rem);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.045em;
+  font-weight: 800;
+}
+
+.py-4\.5 {
+  padding-top: 1.15rem;
+  padding-bottom: 1.15rem;
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.8rem;
+  }
+}
+
+/* Star-dust / Grainy Texture for Capability Cards */
+.bg-gradient-to-br::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.25;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Ensure content stays above the decorative texture */
+.bg-gradient-to-br > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Adjust card border transparency for a more high-end feel */
+.bg-gradient-to-br {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}

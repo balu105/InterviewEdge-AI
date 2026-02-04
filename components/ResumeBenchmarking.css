@@ -1,0 +1,57 @@
+
+.resume-theme-container {
+  /* Soft light blue/white gradient background with glows to match Hub dashboard */
+  background: radial-gradient(circle at 10% 10%, #f7f9fc 0%, #edf2f7 100%);
+  position: relative;
+  z-index: 1;
+}
+
+.resume-glass-card {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(40px) !important;
+  -webkit-backdrop-filter: blur(40px) !important;
+  border: 1px solid rgba(255, 255, 255, 1) !important;
+  box-shadow: 
+    0 40px 100px -20px rgba(0, 0, 0, 0.03),
+    0 0 1px 1px rgba(255, 255, 255, 0.8) inset !important;
+}
+
+/* Stardust Background Effect for the whole container */
+.resume-theme-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(99, 102, 241, 0.08) 1.5px, transparent 1.5px);
+  background-size: 40px 40px;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes scanLine {
+  0% { transform: translateY(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(520px); opacity: 0; }
+}
+
+.animate-scanLine {
+  animation: scanLine 2s linear infinite;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@media (max-width: 768px) {
+  .resume-glass-card {
+    padding: 3rem !important;
+    border-radius: 3rem !important;
+  }
+}

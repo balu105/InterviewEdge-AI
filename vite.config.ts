@@ -4,16 +4,17 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
+  // Fix: Use '.' instead of process.cwd() to avoid type error and use current directory
+  const env = loadEnv(mode, '.', '');
   
   return {
     plugins: [react()],
     define: {
       // Expose the loaded environment variables to the browser via process.env
+      // Note: API_KEY is expected to be injected automatically into process.env.API_KEY
       'process.env': JSON.stringify({
         ...env,
-        // Ensure standard keys are mapped even if they use the VITE_ prefix in Vercel
-        API_KEY: env.API_KEY || env.VITE_API_KEY,
+        // Removed manual API_KEY mapping to comply with @google/genai guidelines
         SUPABASE_URL: env.SUPABASE_URL || env.VITE_SUPABASE_URL,
         SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY,
       })

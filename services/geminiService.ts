@@ -1,34 +1,47 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { ResumeAnalysisResult, ReadinessScore, CodingChallenge } from "../types";
 
 /**
  * Helper to get a fresh AI instance.
- * Guidelines require new instance per call for Gemini 3 / Veo workflows.
  */
 const getAI = () => {
-  // Check both standard and VITE_ prefixed environment variables
-  const apiKey = process.env.API_KEY || (process.env as any).VITE_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error("MISSING_API_KEY: Ensure API_KEY or VITE_API_KEY is set in environment variables.");
-  }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 /**
- * Common error handler for Gemini API calls to identify quota issues.
+ * Robust retry utility for handling transient API failures (5xx, XHR errors).
  */
-const handleApiError = (error: any) => {
-  console.error("Gemini API Error:", error);
-  if (error?.message?.includes("429") || error?.status === "RESOURCE_EXHAUSTED" || error?.message?.includes("quota")) {
-    throw new Error("QUOTA_EXCEEDED: The AI engine is currently at capacity. Please wait a minute and try again.");
+async function callWithRetry<T>(fn: () => Promise<T>, maxRetries = 3, initialDelay = 1000): Promise<T> {
+  let attempt = 0;
+  while (attempt <= maxRetries) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      const errorMsg = error?.message || "";
+      const isQuotaError = errorMsg.includes("429") || error?.status === "RESOURCE_EXHAUSTED" || errorMsg.toLowerCase().includes("quota");
+      const isTransientError = error?.code === 500 || error?.status === 500 || error?.status === 503 || errorMsg.includes("xhr error") || errorMsg.includes("Rpc failed");
+
+      if (isQuotaError) {
+        throw new Error("QUOTA_EXCEEDED: The AI engine is currently at capacity. Please wait a minute and try again.");
+      }
+
+      if (isTransientError && attempt < maxRetries) {
+        attempt++;
+        const delay = initialDelay * Math.pow(2, attempt - 1); // Exponential backoff
+        console.warn(`Gemini API transient error (attempt ${attempt}/${maxRetries}). Retrying in ${delay}ms...`, error);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      console.error("Gemini API Terminal Error:", error);
+      throw error;
+    }
   }
-  throw error;
-};
+  throw new Error("API_RETRY_FAILED: Failed to get response after multiple attempts.");
+}
 
 export const suggestJobRoles = async (resumeText: string): Promise<string[]> => {
-  try {
+  return callWithRetry(async () => {
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -43,20 +56,17 @@ export const suggestJobRoles = async (resumeText: string): Promise<string[]> => 
       }
     });
     return JSON.parse(response.text || '[]');
-  } catch (error) {
-    return handleApiError(error);
-  }
+  });
 };
 
 export const analyzeResume = async (resumeText: string, targetRole: string): Promise<ResumeAnalysisResult> => {
-  try {
+  return callWithRetry(async () => {
     const ai = getAI();
-    // Using flash instead of pro to avoid quota exhaustion for standard analysis
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', 
+      model: 'gemini-3-pro-preview', 
       contents: `Analyze this resume for a ${targetRole} position:
       ${resumeText}
-      Provide a detailed JSON analysis.`,
+      Provide a detailed JSON analysis reflecting skill alignment, missing requirements, and a quality score.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -74,23 +84,15 @@ export const analyzeResume = async (resumeText: string, targetRole: string): Pro
       }
     });
     return JSON.parse(response.text || '{}');
-  } catch (error) {
-    return handleApiError(error);
-  }
+  });
 };
 
 export const generateCodingRound = async (role: string): Promise<CodingChallenge[]> => {
-  try {
+  return callWithRetry(async () => {
     const ai = getAI();
-    // Using flash for faster response and higher quota availability
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Generate exactly 3 coding challenges for a ${role} position. 
-      CONSTRAINTS: 
-      1. Topics MUST ONLY be from: Strings, Arrays, Stack, Queues, Linked Lists.
-      2. Language MUST be relevant to ${role}.
-      3. Provide boilerplate code.
-      4. Provide clear problem statements and example I/O.`,
+      model: 'gemini-3-pro-preview',
+      contents: `Generate exactly 3 coding challenges (Easy, Medium, Hard) suitable for a ${role} position. Include title, problem statement, and a boilerplate.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -113,21 +115,15 @@ export const generateCodingRound = async (role: string): Promise<CodingChallenge
       }
     });
     return JSON.parse(response.text || '[]');
-  } catch (error) {
-    return handleApiError(error);
-  }
+  });
 };
 
 export const evaluateCodeSubmission = async (challenge: CodingChallenge, userCode: string): Promise<{ isCorrect: boolean; feedback: string }> => {
-  try {
+  return callWithRetry(async () => {
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Evaluate this coding solution.
-      Problem: ${challenge.problemStatement}
-      Topic: ${challenge.topic}
-      User Code: ${userCode}
-      Does it correctly solve the problem with proper logic? Return JSON.`,
+      model: 'gemini-3-pro-preview',
+      contents: `Challenge: ${challenge.title}\nDescription: ${challenge.problemStatement}\n\nUser Solution:\n${userCode}\n\nEvaluate for logical correctness and efficiency.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -141,9 +137,7 @@ export const evaluateCodeSubmission = async (challenge: CodingChallenge, userCod
       }
     });
     return JSON.parse(response.text || '{"isCorrect": false, "feedback": "Evaluation failed."}');
-  } catch (error) {
-    return handleApiError(error);
-  }
+  });
 };
 
 export const evaluateFinalReadiness = async (
@@ -152,15 +146,11 @@ export const evaluateFinalReadiness = async (
   interviewTranscript: string,
   cheated: boolean
 ): Promise<ReadinessScore> => {
-  try {
+  return callWithRetry(async () => {
     const ai = getAI();
-    const eligibilityFlag = !cheated && technicalScore >= 60;
-
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Evaluate job readiness. 
-      Resume: ${resumeScore}%, Technical: ${technicalScore}%, Cheated: ${cheated}. 
-      Transcript: ${interviewTranscript}`,
+      model: 'gemini-3-pro-preview',
+      contents: `Resume Audit Score: ${resumeScore}\nTechnical Assessment Score: ${technicalScore}\n\nInterview Transcript:\n${interviewTranscript}\n\nIntegrity Breach: ${cheated}\n\nProvide a comprehensive job readiness evaluation.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -178,8 +168,6 @@ export const evaluateFinalReadiness = async (
     });
     
     const result = JSON.parse(response.text || '{}');
-    return { ...result, isEligible: eligibilityFlag, methodologyNote: "Integrated AI Scoring" };
-  } catch (error) {
-    return handleApiError(error);
-  }
+    return { ...result, isEligible: !cheated && technicalScore >= 60, methodologyNote: "Integrated AI Scoring v4.0" };
+  });
 };

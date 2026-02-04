@@ -23,6 +23,8 @@ export type PlacementStatus =
   | 'PLACED' 
   | 'IDLE';
 
+export type InterventionStatus = 'NONE' | 'SCHEDULED' | 'CONTACTED' | 'RE-ASSESS';
+
 export interface User {
   id?: string;
   name: string;
@@ -84,6 +86,8 @@ export interface AssessmentRecord {
   integrity_breach: boolean;
   feedback?: string;
   placement_status?: PlacementStatus;
+  intervention_status?: InterventionStatus;
+  last_contacted?: string;
   user_email?: string; 
   user_name?: string;  
   user_dept?: string;  

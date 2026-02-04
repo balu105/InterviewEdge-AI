@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppStage, User, ResumeAnalysisResult, ReadinessScore, CodingChallenge, AssessmentRecord } from './types';
 import { Header } from './components/Header';
@@ -7,7 +6,8 @@ import { HubDashboard } from './components/HubDashboard';
 import { RoleTrackSelection } from './components/RoleTrackSelection';
 import { ResumeBenchmarking } from './components/ResumeBenchmarking';
 import { TechnicalAssessment } from './components/TechnicalAssessment';
-import { MockInterview } from './components/MockInterview';
+// Fix: MockInterview is a default export, so import it without curly braces.
+import MockInterview from './components/MockInterview';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
 import { ProjectAbout } from './components/ProjectAbout';
@@ -97,7 +97,7 @@ const App: React.FC = () => {
   };
 
   const handleStartDeployment = () => {
-    setStage(AppStage.TARGET);
+    setStage(AppStage.HUB);
     setError(null);
   };
 
@@ -230,7 +230,7 @@ const App: React.FC = () => {
       case AppStage.PROJECT_DETAILS:
         return <ProjectAbout />;
       case AppStage.HUB:
-        return <HubDashboard onStart={handleStartDeployment} progress={calculateProgress()} history={assessmentHistory} />;
+        return <HubDashboard onStart={() => setStage(AppStage.TARGET)} progress={calculateProgress()} history={assessmentHistory} />;
       case AppStage.PROFILE:
         return user ? <UserProfile user={user} onUpdate={handleProfileUpdate} history={assessmentHistory} /> : null;
       case AppStage.TARGET:
@@ -275,7 +275,7 @@ const App: React.FC = () => {
         onExitFaculty={() => { setFacultyView(false); setStage(AppStage.HUB); }}
       />
       
-      <main className={`pb-20 relative z-10 transition-all duration-500 ${isPostLogin ? 'pt-28 sm:pt-40' : 'pt-0'}`}>
+      <main className={`pb-20 relative z-10 transition-all duration-500 ${isPostLogin ? 'pt-24' : 'pt-0'}`}>
         {isProcessing ? (
           <div className="flex flex-col items-center justify-center py-40 animate-fadeIn">
             <div className="relative w-24 h-24 mb-10">
