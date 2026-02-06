@@ -122,8 +122,8 @@ const App: React.FC = () => {
       
       setStage(AppStage.FORGE);
     } catch (err: any) {
-      console.error("Vector analysis failed:", err);
-      setError(err.message || "An unexpected error occurred during analysis.");
+      console.error("Analysis failure:", err);
+      setError(err.message || "An unexpected error occurred during neural analysis.");
     } finally {
       setIsProcessing(false);
     }
@@ -167,7 +167,7 @@ const App: React.FC = () => {
       
       setStage(AppStage.VERDICT);
     } catch (err: any) {
-      console.error("Verdict generation failed:", err);
+      console.error("Verdict failure:", err);
       setError(err.message || "An unexpected error occurred generating your final score.");
     } finally {
       setIsProcessing(false);
@@ -288,25 +288,35 @@ const App: React.FC = () => {
               <div className="absolute inset-0 border-8 border-indigo-50 rounded-full"></div>
               <div className="absolute inset-0 border-t-8 border-indigo-600 rounded-full animate-spin"></div>
             </div>
-            <h2 className="text-2xl font-black uppercase tracking-[0.3em] text-indigo-900 animate-pulse text-center px-4">Syncing Neural Data</h2>
-            <p className="text-slate-400 text-xs font-bold mt-4 tracking-widest uppercase">Initializing Assessment Engine</p>
+            <h2 className="text-2xl font-black uppercase tracking-[0.3em] text-indigo-900 animate-pulse text-center px-4">Processing Neural Logic</h2>
+            <p className="text-slate-400 text-xs font-bold mt-4 tracking-widest uppercase">Optimizing for Pro Tier Intelligence</p>
           </div>
         ) : error ? (
           <div className="max-w-2xl mx-auto px-6 py-20 text-center space-y-8 animate-fadeIn">
-             <div className="w-20 h-20 bg-rose-50 border border-rose-100 rounded-3xl flex items-center justify-center text-rose-500 mx-auto shadow-sm">
-                <i className="fas fa-exclamation-triangle text-3xl"></i>
+             <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto shadow-sm ${error.includes('QUOTA') ? 'bg-amber-50 border border-amber-100 text-amber-500' : 'bg-rose-50 border border-rose-100 text-rose-500'}`}>
+                <i className={`fas ${error.includes('QUOTA') ? 'fa-hourglass-half' : 'fa-exclamation-triangle'} text-3xl`}></i>
              </div>
              <div className="space-y-3">
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">System Exception</h2>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
+                  {error.includes('QUOTA') ? 'Capacity Reached' : 'System Exception'}
+                </h2>
                 <p className="text-sm font-medium text-slate-500 leading-relaxed px-10">
                   {error}
                 </p>
+                {error.includes('QUOTA') && (
+                  <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 max-w-md mx-auto mt-6">
+                    <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest text-left mb-2">Technical Insight:</p>
+                    <p className="text-[10px] text-slate-500 text-left leading-relaxed">
+                      Even Pro API keys have RPM (Requests Per Minute) limits on preview models. The system has attempted an automatic fallback, but total capacity is currently saturated. 
+                    </p>
+                  </div>
+                )}
              </div>
              <button 
                 onClick={() => setError(null)}
                 className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-black transition-all"
              >
-                Return to Previous State
+                Re-initialize Sequence
              </button>
           </div>
         ) : (
